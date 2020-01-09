@@ -194,7 +194,7 @@ def tof_histogram(df, number_bins, title, label=None, norm=1, interval=None):
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     # Histogram data
-    hist, bin_edges, *_ = plt.hist((df.tof * 1e6 + time_offset) % period_time,
+    hist, bin_edges, *_ = plt.hist((df.tof * 62.5e-9 * 1e6 + time_offset) % period_time,
                                    bins=number_bins, zorder=4, histtype='step',
                                    label=label, weights=weights, range=interval)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])

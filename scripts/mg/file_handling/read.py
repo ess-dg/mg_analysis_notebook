@@ -171,7 +171,6 @@ def extract_clusters(data):
     # Initiate dictionary to store clusters
     ce_dict = {'bus': (-1) * np.ones([size], dtype=int),
                'time': (-1) * np.ones([size], dtype=int),
-               'trigger_time': (-1) * np.ones([size], dtype=int),
                'tof': (-1) * np.ones([size], dtype=int),
                'wch': (-1) * np.ones([size], dtype=int),
                'gch': (-1) * np.ones([size], dtype=int),
@@ -236,12 +235,13 @@ def extract_clusters(data):
             # Update Triggertime, if this was a trigger event
             if is_trigger: trigger_time = time
             # Save cluster data
-            ce_dict['time'][ce_index] = time
-            ce_dict['trigger_time'][ce_index] = trigger_time
-            ce_dict['flag'][ce_index] = different_bus_flag
-            # Reset temporary variables, related to data in events
-            previous_bus, bus = -1, -1
-            max_adc_w, max_adc_g = 0, 0
+            if is_data:
+                ce_dict['time'][ce_index] = time
+                ce_dict['tof'][ce_index] = time - trigger_time
+                ce_dict['flag'][ce_index] = different_bus_flag
+                # Reset temporary variables, related to data in events
+                previous_bus, bus = -1, -1
+                max_adc_w, max_adc_g, different_bus_flag = 0, 0, 0
             # Reset temporary boolean variables, related to word-headers
             is_open, is_trigger, is_data = False, False, False
 
@@ -251,12 +251,10 @@ def extract_clusters(data):
             print('Percentage: %d' % percentage_finished)
 
     # Remove empty elements in clusters and save in DataFrame for easier analysis
+    data = None
     for key in ce_dict:
         ce_dict[key] = ce_dict[key][0:ce_index]
     ce_df = pd.DataFrame(ce_dict)
-    # Extract tof and convert tof and time to seconds
-    ce_df['tof'] = (ce_df['time'] - ce_df['trigger_time']).values * 62.5e-9
-    ce_df['time'] = ce_df['time'].values * 62.5e-9
     return ce_df
 
 

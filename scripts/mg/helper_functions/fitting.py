@@ -7,7 +7,7 @@ PathsAndFolders.py: Helper functions for handling of paths and folders.
 import numpy as np
 from scipy.optimize import curve_fit
 
-from multi_grid.helper_functions.misc import find_nearest
+from mg.helper_functions.misc import find_nearest
 
 # =============================================================================
 #                                 GAUSSIAN FIT

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Animation3D.py: Helper functions for handling of paths and folders.
+""" basic_plotting.py:
 """
 
 import plotly as py
@@ -12,21 +11,92 @@ import os
 import imageio
 import shutil
 from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
 
-from multi_grid.plotting.misc.timestamp import timestamp_plot
-from multi_grid.helper_functions.misc import mkdir_p
-from multi_grid.helper_functions.fitting import get_hist, get_fit_parameters_guesses, fit_data
-from multi_grid.helper_functions.energy_calculation import calculate_energy, get_distances
+#from mg.plotting.misc.timestamp import timestamp_plot
+from mg.helper_functions.misc import mkdir_p
+from mg.helper_functions.fitting import get_hist, get_fit_parameters_guesses, fit_data
+from mg.helper_functions.energy_calculation import calculate_energy, get_distances
+from mg.helper_functions.misc import meV_to_A, A_to_meV
+from mg.helper_functions.peak_finding import get_peaks
 
-from helium_tube.energy_he3 import calculate_He3_energy
+from he3.energy_he3 import calculate_He3_energy
 
+# =============================================================================
+#                               COUNT RATE
+# =============================================================================
 
+def calculate_count_rate(ToF_values, measurement_time, number_bins):
+    """
+        Calculates the count rate. Does this in five steps:
+
+        1. Locates peak index (IMPORANT: The prompt peak must be filtered out before
+        the procedure starts, if this is more intense than elastic peak)
+
+        2. Finds edges of the elastic peak corresponding to the FWHM
+
+        3. Calculate duration of peak for all periods
+
+        4. Calculate number of counts within peak for all periods
+
+        5. Calculate count rate according to counts/time
+
+        Args:
+            ToF_values (numpy array): Numpy array containing all of the ToF values
+            corresponding to the clustered events
+            measurement_time (float): Measurement time in seconds
+
+        Returns:
+            rate (float): Count rate value expressed in Hz
+        """
+    # Declare constants, period time is in [µs]
+    PERIOD_TIME = (1/14)
+    # Histogram data
+    ToF_hist, bin_edges = np.histogram(ToF_values, bins=number_bins, range=[0, PERIOD_TIME])
+    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+    # Calculate range in ToF equivalent to FWHM of the peak
+    peak_idxs = np.where(ToF_hist == max(ToF_hist))
+    peak_idx = peak_idxs[len(peak_idxs)//2][0]
+    start_idx = find_nearest(ToF_hist[peak_idx-50:peak_idx], ToF_hist[peak_idx]/2)
+    stop_idx = find_nearest(ToF_hist[peak_idx:peak_idx+50], ToF_hist[peak_idx]/2)
+    start, stop = bin_centers[peak_idx-50+start_idx], bin_centers[peak_idx+stop_idx]
+    # Calculate counts in peak
+    ToF_values_peak = ToF_values[(ToF_values >= start) & (ToF_values <= stop)]
+    counts_peak = len(ToF_values_peak)
+    # Calculate peak duration
+    number_of_periods = measurement_time/PERIOD_TIME
+    duration_peak_per_period = stop - start
+    duration_peak = number_of_periods * duration_peak_per_period
+    # Calculate rate
+    rate = counts_peak/duration_peak
+    # Visualize range
+    plt.plot(bin_centers[[peak_idx-50+start_idx, peak_idx+stop_idx]],
+             ToF_hist[[peak_idx-50+start_idx, peak_idx+stop_idx]],
+             color='red', marker='o', linestyle='', zorder=5)
+    plt.plot(bin_centers, ToF_hist, '.-', color='black', zorder=4)
+    plt.grid(True, which='major', linestyle='--', zorder=0)
+    plt.grid(True, which='minor', linestyle='--', zorder=0)
+    plt.xlabel('ToF [s]')
+    plt.ylabel('Counts')
+    plt.title('Maximum instantaneous count rate: %f Hz' % rate)
+    # Print statements for debugging purposes
+    print()
+    print('**** COUNT RATE ****')
+    print('------------------')
+    print('Start: %f' % start)
+    print('Stop: %f' % stop)
+    print('Counts peak: %f' % counts_peak)
+    print('Number of periods: %f' % number_of_periods)
+    print('Duration of peak per period: %f ' % duration_peak_per_period)
+    print('Full duration of peak: %f' % duration_peak)
+    print('------------------')
+    return rate
 
 # =============================================================================
 #                      LAYERS INVESTIGATION - TOF
 # =============================================================================
 
-def investigate_layers_ToF(df):
+def layers_tof(df):
     # Define parameters for ToF-histogram
     time_offset = (0.6e-3) * 1e6
     period_time = (1/14) * 1e6
@@ -48,12 +118,9 @@ def investigate_layers_ToF(df):
              label='All layers')
     for layer in range(0, 20):
         # Filter data so that we are only using data from a single voxel
-        df_red = df[((df.wCh % 20) == layer)
-                    &
-                    (((df.Bus * 4) + df.wCh//20) == ROW)
-                    &
-                    (df.gCh == GRID)
-                    ]
+        df_red = df[((df.wCh % 20) == layer) &
+                    (((df.Bus * 4) + df.wCh//20) == ROW) &
+                    (df.gCh == GRID)]
         # Plot ToF-histogram
         plt.hist((df_red.ToF * 62.5e-9 * 1e6 + time_offset) % period_time,
                  bins=number_bins,
@@ -69,7 +136,7 @@ def investigate_layers_ToF(df):
     #plt.ylim(0, 300)
     #plt.title('ToF from different layers (gCh = 88, row = 6)')
     plt.legend()
-    fig.show()
+    return fig
 
 
 # =============================================================================
@@ -186,6 +253,7 @@ def investigate_layers_FWHM(df, df_He3, origin_voxel):
 # =============================================================================
 #                      LAYERS INVESTIGATION - TOF
 # =============================================================================
+
 
 def investigate_layers_delta_ToF(df_MG, df_He3, origin_voxel):
     def linear(x, k, m):
@@ -416,6 +484,103 @@ def investigate_grids(df, duration):
     fig3.show()
 
 
+# =============================================================================
+#                                  ENERGY
+# =============================================================================
+
+
+def energy_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
+    """
+    Histograms the energy transfer values from a measurement
+
+    Args:
+        df (DataFrame): Clustered events
+        Ei (float): Incident energy in meV
+        number_bins (int): Number of bins to histogram energy transfer data
+
+    Returns:
+        fig (Figure): Figure containing nine 2D coincidences histograms, one
+                      for each bus.
+        dE_hist (numpy array): Numpy array containing the histogram data
+        bin_centers (numpy array): Numpy array containing the bin centers
+    """
+    origin_voxel = [1, 88, 40]
+    # Calculate energy
+    energy = calculate_energy(df, origin_voxel)
+    # Select normalization
+    if useMaxNorm is False:
+        norm = 1 * np.ones(len(energy))
+    else:
+        hist_temp, _ = np.histogram(energy, bins=number_bins,
+                                    range=[A_to_meV(stop), A_to_meV(start)])
+        norm = (1/max(hist_temp))*np.ones(len(energy))
+    # Plot data
+    plt.xlabel('Energy (meV)')
+    plt.title('Energy Distribution')
+    plt.xscale('log')
+    hist, bin_edges, *_ = plt.hist(energy, bins=number_bins,
+                                   range=[A_to_meV(stop), A_to_meV(start)],
+                                   zorder=5, histtype='step',
+                                   label=label, weights=norm)
+
+    heights_MG_non_coated = [8000, 1000]
+
+    peaks, heights = get_peaks(hist, heights_MG_non_coated, number_bins)
+    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+    plt.plot(bin_centers[peaks], hist[peaks], 'x', color='red')
+    plt.plot(bin_centers, heights, color='black')
+    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+    plt.grid(True, which='major', linestyle='--', zorder=0)
+    plt.grid(True, which='minor', linestyle='--', zorder=0)
+    plt.ylabel('Counts')
+    plt.yscale('log')
+    return hist, bin_centers
+
+
+# =============================================================================
+#                                  WAVELENGTH
+# =============================================================================
+
+def wavelength_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
+    """
+    Histograms the energy transfer values from a measurement
+
+    Args:
+        df (DataFrame): Clustered events
+        Ei (float): Incident energy in meV
+        number_bins (int): Number of bins to histogram energy transfer data
+
+    Returns:
+        fig (Figure): Figure containing nine 2D coincidences histograms, one
+                      for each bus.
+        dE_hist (numpy array): Numpy array containing the histogram data
+        bin_centers (numpy array): Numpy array containing the bin centers
+    """
+    origin_voxel = [1, 88, 40]
+    # Calculate energy
+    energy = calculate_energy(df, origin_voxel)
+    # Select normalization
+    if useMaxNorm is False:
+        norm = 1 * np.ones(len(energy))
+    else:
+        hist_temp, _ = np.histogram(meV_to_A(energy), bins=number_bins,
+                                    range=[start, stop])
+        norm = (1/max(hist_temp))*np.ones(len(energy))
+    # Plot data
+    plt.xlabel('Wavelength (Å)')
+    plt.title('Wavelength Distribution')
+    hist, bin_edges, *_ = plt.hist(meV_to_A(energy), bins=number_bins,
+                                   range=[start, stop], zorder=5,
+                                   histtype='step',
+                                   label=label,
+                                   weights=norm)
+    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+    plt.grid(True, which='major', linestyle='--', zorder=0)
+    plt.grid(True, which='minor', linestyle='--', zorder=0)
+    plt.ylabel('Counts')
+    plt.yscale('log')
+    return hist, bin_centers
+
 
 # =============================================================================
 #                               HELPER FUNCTIONS
@@ -423,16 +588,16 @@ def investigate_grids(df, duration):
 
 def find_nearest(array, value):
     """
-    Returns the index of the element in 'array' which is closest to 'value'.
+        Returns the index of the element in 'array' which is closest to 'value'.
 
-    Args:
+        Args:
         array (numpy array): Numpy array with elements
         value (float): Value which we want to find the closest element to in
-                       arrray
+        arrray
 
-    Returns:
+        Returns:
         idx (int): index of the element in 'array' which is closest to 'value'
-    """
+        """
     idx = (np.abs(array - value)).argmin()
     return idx
 
