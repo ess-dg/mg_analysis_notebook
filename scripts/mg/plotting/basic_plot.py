@@ -336,8 +336,8 @@ def ce_3d_plot(df, title):
                                            colorbar=dict(thickness=20,
                                                          title='log10(counts)'
                                                          ),
-                                           cmin=1,
-                                           cmax=5.5
+                                           #cmin=1,
+                                           #cmax=5.5
                                            ),
                                text=labels,
                                name='Multi-Grid',
@@ -531,7 +531,7 @@ def plot_front(wChs, gChs, Buses, bus_start, bus_stop, vmin=None, vmax=None,
     plt.xlabel('Row')
     plt.ylabel('Grid')
     cbar = plt.colorbar()
-    cbar.set_label('Counts (Normalized to duration)')
+    cbar.set_label('Counts')
     return h_front
 
 def plot_top(wChs, gChs, Buses, bus_start, bus_stop, vmin=None, vmax=None,
@@ -548,7 +548,7 @@ def plot_top(wChs, gChs, Buses, bus_start, bus_stop, vmin=None, vmax=None,
     plt.xlabel('Row')
     plt.ylabel('Layer')
     cbar = plt.colorbar()
-    cbar.set_label('Counts (Normalized to duration)')
+    cbar.set_label('Counts')
     return h_top
 
 def plot_side(wChs, gChs, Buses, vmin=None, vmax=None, norm=1):
@@ -562,5 +562,5 @@ def plot_side(wChs, gChs, Buses, vmin=None, vmax=None, norm=1):
     plt.xlabel('Layer')
     plt.ylabel('Grid')
     cbar = plt.colorbar()
-    cbar.set_label('Counts (Normalized to duration)')
+    cbar.set_label('Counts')
     return h_side

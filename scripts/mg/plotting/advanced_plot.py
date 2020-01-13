@@ -96,7 +96,7 @@ def calculate_count_rate(ToF_values, measurement_time, number_bins):
 #                      LAYERS INVESTIGATION - TOF
 # =============================================================================
 
-def layers_tof(df):
+def layers_tof(df, title):
     # Define parameters for ToF-histogram
     time_offset = (0.6e-3) * 1e6
     period_time = (1/14) * 1e6
@@ -106,9 +106,10 @@ def layers_tof(df):
     ROW = 6
     # Iterate through the first ten layers and compare
     fig = plt.figure()
-    df_red = df[(((df.Bus * 4) + df.wCh//20) == ROW) &
-                (df.gCh == GRID)]
-    plt.hist((df_red.ToF * 62.5e-9 * 1e6 + time_offset) % period_time,
+    plt.title('Layers - %s' % title)
+    df_red = df[(((df.bus * 4) + df.wch//20) == ROW) &
+                (df.gch == GRID)]
+    plt.hist((df_red.tof * 62.5e-9 * 1e6 + time_offset) % period_time,
              bins=number_bins,
              #range=[28e3, 28.5e3],
              range=[40500, 40900],
@@ -118,11 +119,11 @@ def layers_tof(df):
              label='All layers')
     for layer in range(0, 20):
         # Filter data so that we are only using data from a single voxel
-        df_red = df[((df.wCh % 20) == layer) &
-                    (((df.Bus * 4) + df.wCh//20) == ROW) &
-                    (df.gCh == GRID)]
+        df_red = df[((df.wch % 20) == layer) &
+                    (((df.bus * 4) + df.wch//20) == ROW) &
+                    (df.gch == GRID)]
         # Plot ToF-histogram
-        plt.hist((df_red.ToF * 62.5e-9 * 1e6 + time_offset) % period_time,
+        plt.hist((df_red.tof * 62.5e-9 * 1e6 + time_offset) % period_time,
                  bins=number_bins,
                  #range=[28e3, 28.5e3],
                  range=[40500, 40900],
@@ -251,7 +252,7 @@ def investigate_layers_FWHM(df, df_He3, origin_voxel):
 
 
 # =============================================================================
-#                      LAYERS INVESTIGATION - TOF
+#                    LAYERS INVESTIGATION - DELTA TOF
 # =============================================================================
 
 
@@ -408,16 +409,17 @@ def investigate_layers_delta_ToF(df_MG, df_He3, origin_voxel):
 #                      LAYERS INVESTIGATION - COUNTS
 # =============================================================================
 
-def investigate_layers_counts(df, duration):
+def layers_counts(df, duration, title):
     # Get count as a function of layer and grid
     layers = np.arange(0, 20, 1)
     grids = np.arange(80, 120, 1)
-    counts_layers = [df[(df.wCh % 20) == layer].shape[0] for layer in layers]
-    counts_grids = [df[df.gCh == grid].shape[0] for grid in grids]
+    counts_layers = [df[(df.wch % 20) == layer].shape[0] for layer in layers]
+    counts_grids = [df[df.gch == grid].shape[0] for grid in grids]
     # Plot data
     fig = plt.figure()
+    fig.suptitle('Counts vs layers - %s' % title)
     fig.set_figheight(5)
-    fig.set_figwidth(10)
+    fig.set_figwidth(14)
     plt.subplot(1, 2, 1)
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
@@ -436,7 +438,7 @@ def investigate_layers_counts(df, duration):
     plt.errorbar(grids, counts_grids/duration, np.sqrt(counts_grids)*(1/duration),
                  fmt='.-', capsize=5, zorder=5, color='black')
     plt.tight_layout()
-    fig.show()
+    return fig
 
 # =============================================================================
 #                      LAYERS INVESTIGATION - GRIDS
@@ -489,7 +491,8 @@ def investigate_grids(df, duration):
 # =============================================================================
 
 
-def energy_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
+def energy_plot(df, number_bins, label, distance_offset, start=1, stop=10,
+                useMaxNorm=False):
     """
     Histograms the energy transfer values from a measurement
 
@@ -504,9 +507,8 @@ def energy_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
         dE_hist (numpy array): Numpy array containing the histogram data
         bin_centers (numpy array): Numpy array containing the bin centers
     """
-    origin_voxel = [1, 88, 40]
     # Calculate energy
-    energy = calculate_energy(df, origin_voxel)
+    energy = calculate_energy(df)
     # Select normalization
     if useMaxNorm is False:
         norm = 1 * np.ones(len(energy))
@@ -523,12 +525,12 @@ def energy_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
                                    zorder=5, histtype='step',
                                    label=label, weights=norm)
 
-    heights_MG_non_coated = [8000, 1000]
+    #heights_MG_non_coated = [8000, 1000]
 
-    peaks, heights = get_peaks(hist, heights_MG_non_coated, number_bins)
-    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
-    plt.plot(bin_centers[peaks], hist[peaks], 'x', color='red')
-    plt.plot(bin_centers, heights, color='black')
+    #peaks, heights = get_peaks(hist, heights_MG_non_coated, number_bins)
+    #bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+    #plt.plot(bin_centers[peaks], hist[peaks], 'x', color='red')
+    #plt.plot(bin_centers, heights, color='black')
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
@@ -541,7 +543,8 @@ def energy_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
 #                                  WAVELENGTH
 # =============================================================================
 
-def wavelength_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
+def wavelength_plot(df, number_bins, label, distance_offset,
+                    start=1, stop=10, useMaxNorm=False):
     """
     Histograms the energy transfer values from a measurement
 
@@ -556,9 +559,8 @@ def wavelength_plot(df, number_bins, label, start=1, stop=10, useMaxNorm=False):
         dE_hist (numpy array): Numpy array containing the histogram data
         bin_centers (numpy array): Numpy array containing the bin centers
     """
-    origin_voxel = [1, 88, 40]
     # Calculate energy
-    energy = calculate_energy(df, origin_voxel)
+    energy = calculate_energy(df, distance_offset)
     # Select normalization
     if useMaxNorm is False:
         norm = 1 * np.ones(len(energy))

@@ -26,7 +26,6 @@ def create_mapping(origin_voxel, distance_offset=0):
     Returns:
         detector_mapping (dict): Dictionary conta
     """
-
     # Calculate offset of detectors in (x, y, z)
     theta = 0
     bus_origin, gCh_origin, wCh_origin = origin_voxel
