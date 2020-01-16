@@ -16,11 +16,11 @@ from scipy.signal import find_peaks
 #from mg.plotting.misc.timestamp import timestamp_plot
 from mg.helper_functions.misc import mkdir_p
 from mg.helper_functions.fitting import get_hist, get_fit_parameters_guesses, fit_data
-from mg.helper_functions.energy_calculation import calculate_energy, get_distances
+from mg.helper_functions.energy_calculation import get_energies, get_distances
 from mg.helper_functions.misc import meV_to_A, A_to_meV
 from mg.helper_functions.peak_finding import get_peaks
 
-from he3.energy_he3 import calculate_He3_energy
+
 
 # =============================================================================
 #                               COUNT RATE
@@ -100,12 +100,14 @@ def layers_tof(df, title):
     # Define parameters for ToF-histogram
     time_offset = (0.6e-3) * 1e6
     period_time = (1/14) * 1e6
-    number_bins = 300
+    number_bins = 250
     # Define beam hit position
     GRID = 88
     ROW = 6
     # Iterate through the first ten layers and compare
     fig = plt.figure()
+    fig.set_figheight(7)
+    fig.set_figwidth(14)
     plt.title('Layers - %s' % title)
     df_red = df[(((df.bus * 4) + df.wch//20) == ROW) &
                 (df.gch == GRID)]
@@ -491,8 +493,8 @@ def investigate_grids(df, duration):
 # =============================================================================
 
 
-def energy_plot(df, number_bins, label, distance_offset, start=1, stop=10,
-                useMaxNorm=False):
+def energy_plot(energy, number_bins, label, start=1, stop=10, useMaxNorm=False,
+                color=None, scaling=1):
     """
     Histograms the energy transfer values from a measurement
 
@@ -507,23 +509,21 @@ def energy_plot(df, number_bins, label, distance_offset, start=1, stop=10,
         dE_hist (numpy array): Numpy array containing the histogram data
         bin_centers (numpy array): Numpy array containing the bin centers
     """
-    # Calculate energy
-    energy = calculate_energy(df)
+
     # Select normalization
     if useMaxNorm is False:
-        norm = 1 * np.ones(len(energy))
+        norm = scaling * np.ones(len(energy))
     else:
         hist_temp, _ = np.histogram(energy, bins=number_bins,
                                     range=[A_to_meV(stop), A_to_meV(start)])
         norm = (1/max(hist_temp))*np.ones(len(energy))
     # Plot data
     plt.xlabel('Energy (meV)')
-    plt.title('Energy Distribution')
     plt.xscale('log')
     hist, bin_edges, *_ = plt.hist(energy, bins=number_bins,
                                    range=[A_to_meV(stop), A_to_meV(start)],
                                    zorder=5, histtype='step',
-                                   label=label, weights=norm)
+                                   label=label, weights=norm, color=color)
 
     #heights_MG_non_coated = [8000, 1000]
 
@@ -535,7 +535,6 @@ def energy_plot(df, number_bins, label, distance_offset, start=1, stop=10,
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     plt.ylabel('Counts')
-    plt.yscale('log')
     return hist, bin_centers
 
 
@@ -543,8 +542,8 @@ def energy_plot(df, number_bins, label, distance_offset, start=1, stop=10,
 #                                  WAVELENGTH
 # =============================================================================
 
-def wavelength_plot(df, number_bins, label, distance_offset,
-                    start=1, stop=10, useMaxNorm=False):
+def wavelength_plot(energy, number_bins, label, start=1, stop=10,
+                    useMaxNorm=False, color=None, scaling=1):
     """
     Histograms the energy transfer values from a measurement
 
@@ -559,28 +558,26 @@ def wavelength_plot(df, number_bins, label, distance_offset,
         dE_hist (numpy array): Numpy array containing the histogram data
         bin_centers (numpy array): Numpy array containing the bin centers
     """
-    # Calculate energy
-    energy = calculate_energy(df, distance_offset)
+
     # Select normalization
     if useMaxNorm is False:
-        norm = 1 * np.ones(len(energy))
+        norm = scaling * np.ones(len(energy))
     else:
         hist_temp, _ = np.histogram(meV_to_A(energy), bins=number_bins,
                                     range=[start, stop])
         norm = (1/max(hist_temp))*np.ones(len(energy))
     # Plot data
     plt.xlabel('Wavelength (Å)')
-    plt.title('Wavelength Distribution')
     hist, bin_edges, *_ = plt.hist(meV_to_A(energy), bins=number_bins,
                                    range=[start, stop], zorder=5,
                                    histtype='step',
                                    label=label,
-                                   weights=norm)
+                                   weights=norm,
+                                   color=color)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     plt.ylabel('Counts')
-    plt.yscale('log')
     return hist, bin_centers
 
 

@@ -24,7 +24,7 @@ def fit_data(hist, bins, a_guess, x0_guess, sigma_guess):
 
 
 # =============================================================================
-#                          GET ESTIMATION OF PARAMETERS
+#                       GET ESTIMATION OF FIT PARAMETERS
 # =============================================================================
 
 def get_fit_parameters_guesses(hist, bins):

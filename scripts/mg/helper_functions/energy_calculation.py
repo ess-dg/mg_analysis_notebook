@@ -11,7 +11,7 @@ from mg.helper_functions.mapping import create_mapping
 #                                 CALCULATE ENERGY
 # =============================================================================
 
-def calculate_energy(df, distance_offset=0):
+def get_energies(df, distance_offset=0):
     """
     Calculates the energy transfer of a data set.
 

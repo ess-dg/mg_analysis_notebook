@@ -225,45 +225,30 @@ def plot_efficiency(He3_energies, MG_energies,
 #                            CALCULATE PEAK AREA
 # =============================================================================
 
-def get_peak_area(energies, x0, sigma, bin_width, weights=None):
+def get_peak_area(energies, x0, sigma, bin_width,
+                  peak_lower_limit, peak_upper_limit,
+                  background_lower_limit, background_upper_limit,
+                  weights=None):
     """
-    Calculates the elastic peak area. Does this in five steps:
 
-    1. Histogram dE values
-    2. Fit peak and extract relevant fit parameters
-    3. Sum counts within ±σ of peak (peak counts)
-    4. Get an estimate of background/meV between "back_start" and "back_stop"
-    5. Subtract background from peak counts
-
-    Args:
-        dE_values (numpy array): Energy transfer values
-        Ei (float): Incident energy in meV
-
-    Returns:
-        signal_counts (float): Counts in elastic peak, background reduced
     """
-    # Get background range
-    if x0 < 70:
-        back_start = -30
-        back_stop = -25
-        peak_start = 16
-        peak_stop = 4
-    else:
-        back_start = -3
-        back_stop = -2
-        peak_start = 2
-        peak_stop = 2
+
     # Extract number of counts from regions of interest
-    peak_indexes = (energies >= (x0 - peak_start*sigma)) & (energies <= (x0 + peak_stop*sigma))
-    background_indexes = (energies >= (x0 + back_start*sigma)) & (energies <= (x0 + back_stop*sigma))
+    peak_indexes = (energies >= (x0 + peak_lower_limit*sigma)) &
+                    (energies <= (x0 + peak_upper_limit*sigma))
+    background_indexes = (energies >= (x0 + background_lower_limit*sigma)) &
+                         (energies <= (x0 + background_upper_limit*sigma))
     peak_counts = energies[peak_indexes]
     background_counts = energies[background_indexes]
+
     # Rename for easier calculation of uncertainties
     a = len(peak_counts)
     b = len(background_counts)
-    background_range_in_meV = sigma*abs((back_start-back_stop))
+    background_range_in_meV = sigma*abs((background_upper_limit-background_lower_limit))
+
     # Define normalization constants
-    norm = (1/background_range_in_meV) * sigma * (peak_start+peak_stop)
+    norm = (1/background_range_in_meV) * sigma * (peak_upper_limit-peak_lower_limit)
+
     # Calculate area
     if weights is not None:
         norm_a = sum(weights[peak_indexes])/a
@@ -272,18 +257,22 @@ def get_peak_area(energies, x0, sigma, bin_width, weights=None):
         norm_a = 1
         norm_b = 1
     c = (a * norm_a) - (b * norm * norm_b)
+
     # Calculate uncertainites
     da = np.sqrt(a)
     db = np.sqrt(b)
     dc = np.sqrt((da*norm_b) ** 2 + (db*norm*norm_b) ** 2)
     uncertainty = dc
     area = c
+
     # Plot background to cross-check calculation
     plt.axhline(y=b*norm_b*(1/background_range_in_meV)*bin_width, color='black',
                 linewidth=2, label=None)
+
     # Statistics for background
     plt.axvline(x=x0 + back_start*sigma, color='black', linewidth=2, label='Background')
     plt.axvline(x=x0 + back_stop*sigma, color='black', linewidth=2, label=None)
+
     # Statistics for peak area
     plt.axvline(x=x0 - peak_start*sigma, color='orange', linewidth=2, label='Peak borders')
     plt.axvline(x=x0 + peak_stop*sigma, color='orange', linewidth=2, label=None)
