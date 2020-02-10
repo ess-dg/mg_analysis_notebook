@@ -13,14 +13,14 @@ import shutil
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
-#from mg.plotting.misc.timestamp import timestamp_plot
+
 from mg.helper_functions.misc import mkdir_p
-from mg.helper_functions.fitting import get_hist, get_fit_parameters_guesses, fit_data
 from mg.helper_functions.energy_calculation import get_energies, get_distances
 from mg.helper_functions.misc import meV_to_A, A_to_meV
-from mg.helper_functions.peak_finding import get_peaks
 
-
+import he3.energy_calculation as he3_energy
+import mg.helper_functions.energy_calculation as mg_energy
+import mg.helper_functions.misc as mg_hf
 
 # =============================================================================
 #                               COUNT RATE
@@ -146,7 +146,7 @@ def layers_tof(df, title):
 #                      LAYERS INVESTIGATION - FWHM
 # =============================================================================
 
-def investigate_layers_FWHM(df, df_He3, origin_voxel):
+def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     def linear(x, k, m):
         return k*x + m
 
@@ -154,34 +154,40 @@ def investigate_layers_FWHM(df, df_He3, origin_voxel):
         return a*np.exp(-(x-x0)**2/(2*sigma**2))
 
     # Declare parameters
+    origin_voxel = [1, 88, 40]
     number_bins = 50
-    GRID = 88
+    GRID_MIN = 87
+    GRID_MAX = 89
     ROW = 6
-    voxel_to_distance_dict = get_distances(origin_voxel, 0)
+    voxel_to_distance_dict = get_distances(origin_voxel, offset_mg)
+    source_chopper_to_fermi_chopper_exit = 27.91845
+    he3_tube_position = 28.239 - source_chopper_to_fermi_chopper_exit
     # Define region of the peak we want to study
-    peak = 15.03 # meV
-    left, right = peak - 0.07, peak + 0.07
+    left, right = mg_hf.A_to_meV(peak + 0.005), mg_hf.A_to_meV(peak - 0.005)
     # Iterate through all layers, a single voxel from each layer, saving the FWHMs
     fig = plt.figure()
+    fig.set_figwidth(15)
+    fig.set_figheight(5)
     plt.subplot(1, 3, 1)
     FWHMs = []
     distances = []
     errors = []
     for layer in range(0, 20):
         # Filter data so that we are only using data from a single voxel
-        df_red = df[((df.wCh % 20) == layer) &
-                    (((df.Bus * 4) + df.wCh//20) == ROW) &
-                    (df.gCh == GRID)]
-        print(layer)
+        df_red = df_mg[((df_mg.wch % 20) == layer) &
+                       (((df_mg.bus * 4) + df_mg.wch//20) == ROW) &
+                       (df_mg.gch >= GRID_MIN) &
+                       (df_mg.gch <= GRID_MAX)]
         # Caluclate energies
-        energies = calculate_energy(df_red, origin_voxel)
-        hist, bins = get_hist(energies, number_bins, left, right)
-        a_guess, x0_guess, sigma_guess = get_fit_parameters_guesses(hist, bins)
+        energies = mg_energy.get_energies(df_red, offset_mg)
+        hist, bins = mg_hf.get_hist(energies, number_bins, left, right)
+        a_guess, x0_guess, sigma_guess = mg_hf.get_fit_parameters_guesses(hist, bins)
         fit_left, fit_right = x0_guess - 2 * sigma_guess, x0_guess + 2 * sigma_guess
-        hist_fit, bins_fit = get_hist(energies[(energies >= fit_left) & (energies <= fit_right)],
-                                      10, fit_left, fit_right)
-        a, x0, sigma, __, __, pcov = fit_data(hist_fit, bins_fit, a_guess, x0_guess, sigma_guess)
-        a_err, x0_err, sigma_err = np.sqrt(np.diag(pcov))
+        hist_fit, bins_fit = mg_hf.get_hist(energies[(energies >= fit_left) & (energies <= fit_right)],
+                                            10, fit_left, fit_right)
+        a, x0, sigma, __, __, perr = mg_hf.fit_data(hist_fit, bins_fit, a_guess,
+                                                    x0_guess, sigma_guess)
+        a_err, x0_err, sigma_err = perr
         # Plot
         plt.errorbar(bins, hist, np.sqrt(hist), marker='.', linestyle='-', fmt='.-', capsize=5,
                      zorder=5, label='Layer: %d' % layer)
@@ -191,27 +197,31 @@ def investigate_layers_FWHM(df, df_He3, origin_voxel):
         # Extract important parameters
         FWHM = 2 * np.sqrt(2*np.log(2)) * sigma
         FWHM_err = 2 * np.sqrt(2*np.log(2)) * sigma_err
-        distance = voxel_to_distance_dict[df_red.Bus, df_red.gCh, df_red.wCh][0]
+        distance = voxel_to_distance_dict[df_red.bus,
+                                          df_red.gch,
+                                          df_red.wch][0] - source_chopper_to_fermi_chopper_exit
         FWHMs.append(FWHM)
         errors.append(FWHM_err)
         distances.append(distance)
+        plt.xlim(left, right)
     # Stylize plot
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
-    plt.xlabel('Energy [meV]')
+    plt.xlabel('Energy (meV)')
     plt.ylabel('Counts')
-    plt.title('Energy Histogram MG, peak at %.2f meV' % peak)
-    plt.legend()
+    plt.title('Energy Histogram MG, peak at %.2f Å' % peak)
+    plt.legend(loc=1)
+    plt.yscale('log')
     # Plot He-3
     plt.subplot(1, 3, 2)
-    energies_He3 = calculate_He3_energy(df_He3)
-    hist, bins = get_hist(energies_He3, number_bins, left, right)
-    a_guess, x0_guess, sigma_guess = get_fit_parameters_guesses(hist, bins)
+    energies_He3 = he3_energy.get_energies(df_he3, offset_he3)
+    hist, bins = mg_hf.get_hist(energies_He3, number_bins, left, right)
+    a_guess, x0_guess, sigma_guess = mg_hf.get_fit_parameters_guesses(hist, bins)
     fit_left, fit_right = x0_guess - 2 * sigma_guess, x0_guess + 2 * sigma_guess
-    hist_fit, bins_fit = get_hist(energies_He3[(energies_He3 >= fit_left) & (energies_He3 <= fit_right)],
-                                  10, fit_left, fit_right)
-    a, x0, sigma, __, __, pcov = fit_data(hist_fit, bins_fit, a_guess, x0_guess, sigma_guess)
-    a_err, x0_err, sigma_err  = np.sqrt(np.diag(pcov))
+    hist_fit, bins_fit = mg_hf.get_hist(energies_He3[(energies_He3 >= fit_left) & (energies_He3 <= fit_right)],
+                                        10, fit_left, fit_right)
+    a, x0, sigma, __, __, perr = mg_hf.fit_data(hist_fit, bins_fit, a_guess, x0_guess, sigma_guess)
+    a_err, x0_err, sigma_err  = perr
     # Plot
     plt.errorbar(bins, hist, np.sqrt(hist), marker='.', fmt='.-', capsize=5, linestyle='-', zorder=5, label='He-3', color='red')
     xx = np.linspace(fit_left, fit_right, 1000)
@@ -223,10 +233,12 @@ def investigate_layers_FWHM(df, df_He3, origin_voxel):
     # Stylize plot
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
-    plt.xlabel('Energy [meV]')
+    plt.xlabel('Energy (meV)')
     plt.ylabel('Counts')
-    plt.title('Energy Histogram He-3, peak at %.2f meV' % peak)
+    plt.title('Energy Histogram He-3, peak at %.2f Å' % peak)
     plt.legend()
+    plt.xlim(left, right)
+    plt.yscale('log')
     # Plot third subplot, containing FWHM for the different layers, as well as
     # linear fit on MG data.
     paras, pcov = np.polyfit(distances, FWHMs, 1, w=1/np.array(errors), cov=True)
@@ -236,21 +248,52 @@ def investigate_layers_FWHM(df, df_He3, origin_voxel):
     lower_k, lower_m = k + k_err, m - m_err
     plt.subplot(1, 3, 3)
     plt.title('FWHM vs distance')
-    plt.ylabel('FWHM [meV]')
-    plt.xlabel('Distance to Source Chopper [m]')
+    plt.ylabel('FWHM (meV)')
+    plt.xlabel('Distance to Fermi Chopper (m)')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
-    #plt.plot(distances, FWHMs, marker='o', zorder=5, label='MG', color='blue', linestyle='')
-    plt.errorbar(distances, FWHMs, errors, fmt='.-', capsize=5, zorder=5, label='MG', color='blue', linestyle='')
-    plt.errorbar(28.239, FWHM_He3, FWHM_He3_err, fmt='.-', color='red', capsize=5, zorder=5, label='He-3')
-    xx = np.linspace(26, 30, 100)
-    plt.plot(xx, linear(xx, upper_k, upper_m), color='black', linestyle='-.', label='Multi-Grid Fit (Upper Bound)')
-    plt.plot(xx, linear(xx, k, m), color='black', linestyle='-', label='Multi-Grid Fit')
-    plt.plot(xx, linear(xx, lower_k, lower_m), color='black', linestyle='-.', label='Multi-Grid Fit (Lower Bound)')
-    plt.xlim(28, 28.65)
-    plt.ylim(0.015, 0.035)
+    plt.errorbar(distances, FWHMs, errors, marker='.', capsize=5, zorder=5,
+                 label='FWHM: Multi-Grid detector', color='blue', linestyle='')
+    plt.errorbar(he3_tube_position, FWHM_He3, FWHM_He3_err,
+                 marker='.', color='red', capsize=5, zorder=5,
+                 label='FWHM: Helium-3 tube')
+    start_lim = 0
+    end_lim = 1
+    xx = np.linspace(start_lim, end_lim, 100)
+    plt.plot(xx, linear(xx, upper_k, upper_m), color='blue',
+             linestyle='dashed', label=None)
+    plt.plot(xx, linear(xx, k, m), color='blue',
+             linestyle='dashed', label='Fit: Multi-Grid detector')
+    plt.plot(xx, linear(xx, lower_k, lower_m), color='blue',
+             linestyle='dashed', label=None)
+    plt.xlim(start_lim,
+             end_lim)
+    plt.ylim(0, 0.4)
+    plt.tight_layout()
+    plt.ylim(linear(xx[mg_hf.find_nearest(xx, start_lim)], k, m)*0.9,
+             linear(xx[mg_hf.find_nearest(xx, end_lim)], k, m)*1.1)
+    # Get values at He-3 tube
+    idx = mg_hf.find_nearest(xx, he3_tube_position)
+    interpolated_mg_value_at_he3 = linear(xx[idx], k, m)
+    he3_value = FWHM_He3
+
+    # Interpolate He-3 to MG
+    mg_first_voxel_position = distances[0]
+    FWHM_He3_interpolated = FWHM_He3 * (mg_first_voxel_position/he3_tube_position)
+    x_he3_inter = [he3_tube_position, mg_first_voxel_position]
+    y_he3_inter = [FWHM_He3, FWHM_He3_interpolated]
+    err_he3_iter = [FWHM_He3_err,
+                    FWHM_He3_err*(mg_first_voxel_position/he3_tube_position)]
+    plt.errorbar(x_he3_inter, y_he3_inter, err_he3_iter,
+                 marker='s', linestyle='', color='red',
+                 label='FWHM interpolation: Helium-3 tube')
+    paras = np.polyfit(x_he3_inter, y_he3_inter, 1,
+                       w=1/np.array(err_he3_iter), cov=False)
+    k_he3, m_he3 = paras[0], paras[1]
+    plt.plot(xx, linear(xx, k_he3, m_he3), color='red', linestyle='dashed',
+             label='Fit: Helium-3 tube')
     plt.legend()
-    fig.show()
+    return fig, interpolated_mg_value_at_he3, he3_value, k, k_he3
 
 
 # =============================================================================
@@ -419,8 +462,8 @@ def layers_counts(df, duration, title):
     counts_grids = [df[df.gch == grid].shape[0] for grid in grids]
     # Plot data
     fig = plt.figure()
-    fig.suptitle('Counts vs layers - %s' % title)
-    fig.set_figheight(5)
+    #fig.suptitle('Counts vs layers - %s' % title)
+    fig.set_figheight(4)
     fig.set_figwidth(14)
     plt.subplot(1, 2, 1)
     plt.grid(True, which='major', linestyle='--', zorder=0)
@@ -577,7 +620,7 @@ def wavelength_plot(energy, number_bins, label, start=1, stop=10,
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
-    plt.ylabel('Counts')
+    plt.ylabel('Normalized counts')
     return hist, bin_centers
 
 

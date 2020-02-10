@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 from scipy.signal import find_peaks
-from mg.helper_functions.peak_finding import get_peaks
 
 
 # =============================================================================
@@ -49,17 +48,17 @@ def He3_Ch_plot(df):
 #                                     TOF
 # =============================================================================
 
-def tof_histogram(df, number_bins, label=None, interval=None):
+def tof_histogram(df, number_bins, label=None, interval=None, color=None):
     # Declare parameters
     time_offset = (0.6e-3) * 1e6
     period_time = (1/14) * 1e6
     hist, bin_edges, *_ = plt.hist((df.tof * 1e6 + time_offset) % period_time,
                                    histtype='step', zorder=5, bins=number_bins,
-                                   label=label, range=interval)
+                                   label=label, range=interval, color=color)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     plt.xlabel('ToF (µs)')
     plt.ylabel('Counts')
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.title('ToF')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
@@ -169,9 +168,9 @@ def wavelength_plot(energy, number_bins, label, start=1, stop=10,
     return hist, bin_centers
 
 
-# =============================================================================
+# ==============================================================================
 #                             PILEUP - HELIUM-3
-# =============================================================================
+# ==============================================================================
 
 def he3_pileup_plot(df):
     def plot_2D_hist(df, title):

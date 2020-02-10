@@ -267,11 +267,13 @@ def extract_events(data):
     # Initiate dictionary to store events
     e_dict = {'bus': (-1) * np.ones([size], dtype=int),
               'ch': (-1) * np.ones([size], dtype=int),
-              'adc': np.zeros([size], dtype=int)}
+              'adc': np.zeros([size], dtype=int),
+              'time': (-1) * np.ones([size], dtype=int)}
     # Declare temporary boolean variables
     is_open, is_data = False, False
     # Declare variable that track index for events
     e_index = 0
+    e_count = 0
     # Iterate through data
     for i, word in enumerate(data):
         # Five possibilities: Header, DataBusStart, DataEvent, DataExTs or EoE.
@@ -291,6 +293,7 @@ def extract_events(data):
                 e_dict['ch'][e_index] = channel ^ 1
                 e_dict['adc'][e_index] = adc
                 e_index += 1
+                e_count += 1
             # Grids have channels between 80->119
             elif 80 <= channel <= 119:
                 # Save event data and increase event index and event count
@@ -298,13 +301,22 @@ def extract_events(data):
                 e_dict['ch'][e_index] = channel
                 e_dict['adc'][e_index] = adc
                 e_index += 1
+                e_count += 1
             else:
                 pass
         elif ((word & DATA_MASK) == DATA_EXTS) & is_open:
-            pass
+            extended_time_stamp = (word & EXTS_MASK) << EXTS_SHIFT
+            is_exts = True
         elif ((word & TYPE_MASK) == EOE) & is_open:
+            # Extract time_timestamp and add extended timestamp, if ExTs is used
+            time_stamp = (word & TIMESTAMP_MASK)
+            time = (extended_time_stamp | time_stamp) if is_exts else time_stamp
+            if is_data:
+                e_dict['time'][e_index-e_count:e_index+1] = time
             # Reset temporary boolean variables, related to word-headers
             is_open, is_trigger, is_data = False, False, False
+            e_count = 0
+
 
 
         # Print progress of clustering process
@@ -314,7 +326,7 @@ def extract_events(data):
 
     # Remove empty elements in events and save in DataFrame for easier analysis
     for key in e_dict:
-        e_dict[key] = e_dict[key][0:e_index]
+        e_dict[key] = e_dict[key][0:e_index+1]
     e_df = pd.DataFrame(e_dict)
     return e_df
 
@@ -378,11 +390,11 @@ def filter_data(df, parameters):
     for parameter, (min_val, max_val, filter_on) in parameters.items():
         if filter_on:
             if parameter == 'layer':
-                df_red = df_red[((df_red.wCh % 20) >= min_val) &
-                                ((df_red.wCh % 20) <= max_val)]
+                df_red = df_red[((df_red.wch % 20) >= min_val) &
+                                ((df_red.wch % 20) <= max_val)]
             elif parameter == 'row':
-                df_red = df_red[(((df_red.Bus * 4) + df_red.wCh//20) >= min_val) &
-                                (((df_red.Bus * 4) + df_red.wCh//20) <= max_val)]
+                df_red = df_red[(((df_red.bus * 4) + df_red.wch//20) >= min_val) &
+                                (((df_red.bus * 4) + df_red.wch//20) <= max_val)]
             else:
                 df_red = df_red[(df_red[parameter] >= min_val) &
                                 (df_red[parameter] <= max_val)]

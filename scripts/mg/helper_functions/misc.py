@@ -7,6 +7,7 @@ Misc.py: Helper functions for handling of paths and folders.
 from errno import EEXIST
 from os import makedirs,path
 import numpy as np
+import matplotlib.pyplot as plt
 
 from scipy.optimize import curve_fit
 
@@ -22,8 +23,10 @@ def fit_data(hist, bins, a_guess, x0_guess, sigma_guess):
 
     popt, pcov = curve_fit(Gaussian, bins, hist, p0=[a_guess, x0_guess, sigma_guess])
     a, x0, sigma = popt[0], popt[1], abs(popt[2])
-    xx = np.linspace(bins[0], bins[-1], 1000)
-    return a, x0, sigma, xx, Gaussian(xx, a, x0, sigma), pcov
+    perr = np.sqrt(np.diag(pcov))
+    length = abs(bins[-1] - bins[0])
+    xx = np.linspace(bins[0]-0.5*length, bins[-1]+0.5*length, 1000)
+    return a, x0, sigma, xx, Gaussian(xx, a, x0, sigma), perr
 
 
 # =============================================================================
@@ -51,8 +54,7 @@ def get_fit_parameters_guesses(hist, bins):
 
 def get_peak_area(energies, x0, sigma, bin_width,
                   peak_lower_limit, peak_upper_limit,
-                  background_lower_limit, background_upper_limit,
-                  weights=None):
+                  background_lower_limit, background_upper_limit):
     """
 
     """
@@ -73,27 +75,20 @@ def get_peak_area(energies, x0, sigma, bin_width,
     # Define normalization constants
     norm = (1/background_range_in_meV) * sigma * (peak_upper_limit-peak_lower_limit)
 
-    # Calculate normalization based on weights
-    if weights is not None:
-        norm_a = sum(weights[peak_indexes])/a
-        norm_b = sum(weights[background_indexes])/b
-    else:
-        norm_a = 1
-        norm_b = 1
-
     # Calculate area by removing constant background level
-    c = (a * norm_a) - (b * norm * norm_b)
+    c = a - b * norm
 
     # Calculate uncertainites
     da = np.sqrt(a)
     db = np.sqrt(b)
-    dc = np.sqrt((da*norm_b) ** 2 + (db*norm*norm_b) ** 2)
-    uncertainty = dc
+    dc = np.sqrt(da ** 2 + (db*norm) ** 2)
     area = c
+    uncertainty = dc
 
     # Plot background to cross-check calculation
-    plt.axhline(y=b*norm_b*(1/background_range_in_meV)*bin_width, color='black',
-                linewidth=2, label=None)
+    plt.axhline(y=b*(1/background_range_in_meV)*bin_width,
+                color='black', linestyle='--', linewidth=2,
+                label='Background')
 
     return area, uncertainty
 
@@ -138,6 +133,7 @@ def find_nearest(array, value):
     idx = (np.abs(array - value)).argmin()
     return idx
 
+
 # =============================================================================
 #                          GET MEASUREMENT DURATION
 # =============================================================================
@@ -169,6 +165,21 @@ def get_hist(energies, number_bins, start, stop, weights=None):
                                    range=[start, stop], weights=weights)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     return hist, bin_centers
+
+
+# =============================================================================
+#                             CUSTOMIZE THICK LABELS
+# =============================================================================
+
+def set_thick_labels(thickness):
+    # Customize matplotlib font sizes
+    plt.rc('font', size=thickness)          # controls default text sizes
+    plt.rc('axes', titlesize=thickness)     # fontsize of the axes title
+    plt.rc('axes', labelsize=thickness)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=thickness)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=thickness)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=thickness)    # legend fontsize
+    plt.rc('figure', titlesize=thickness)  # fontsize of the figure title
 
 # =============================================================================
 #                       ENERGY-WAVELENGTH CONVERSION

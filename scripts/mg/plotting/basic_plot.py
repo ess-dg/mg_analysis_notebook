@@ -35,23 +35,25 @@ def phs_1d_plot(clusters, number_bins, interval, title):
         Figure containing a 1D PHS plot
     """
     # Declare parameters
-    fig = plt.figure()
-    labels = ['Wires', 'Grids']
-    limits = [[0, 79], [80, 119]]
-    adc_types = ['wadc', 'gadc']
+    labels = ['Wires',
+              'Grids'
+              ]
+    adc_types = ['wadc',
+                 'gadc'
+                 ]
     # Produce plot
     for i, (label, adc_type) in enumerate(zip(labels, adc_types)):
         # Set figure properties
-        plt.title('PHS - %s' % title)
-        plt.xlabel('Collected charge [ADC channels]')
+        #plt.title('PHS - %s' % title)
+        plt.xlabel('Collected charge (ADC channels)')
         plt.ylabel('Counts')
         plt.grid(True, which='major', linestyle='--', zorder=0)
         plt.grid(True, which='minor', linestyle='--', zorder=0)
         # Plot
         plt.hist(clusters[adc_type], bins=number_bins, histtype='step',
-                 zorder=5, range=interval, label=label)
+                 zorder=5, range=interval, label='%s' % (label))
+
     plt.legend()
-    return fig
 
 
 # =============================================================================
@@ -73,18 +75,19 @@ def phs_2d_plot(events, bus_start, bus_stop, title):
     """
     def PHS_2D_plot_bus(fig, events, sub_title, vmin, vmax):
         plt.xlabel('Channel')
-        plt.ylabel('Charge [ADC channels]')
+        plt.ylabel('Charge (ADC channels)')
         plt.title(sub_title)
         bins = [120, 120]
         if events.shape[0] > 1:
             plt.hist2d(events.ch, events.adc, bins=bins, norm=LogNorm(),
-                       range=[[-0.5, 119.5], [0, 4400]], vmin=vmin, vmax=vmax,
+                       range=[[-0.5, 119.5], [0, 4400]],
+                       vmin=vmin, vmax=vmax,
                        cmap='jet')
         plt.colorbar()
 
     # Prepare figure
     fig = plt.figure()
-    fig.suptitle('PHS (2D) - %s' % title)
+    #fig.suptitle('PHS (2D) - %s' % title)
     number_detectors = (bus_stop - bus_start)//3 + 1
     fig.set_figheight(4*number_detectors)
     if number_detectors == 1:
@@ -144,7 +147,7 @@ def phs_wires_vs_grids_plot(ce, bus_start, bus_stop, title):
 
     # Plot data
     fig = plt.figure()
-    fig.suptitle('PHS (2D) - %s' % title)
+    #fig.suptitle('PHS (2D) - %s' % title)
     number_detectors = ((bus_stop + 1) - bus_start)//3
     fig.set_figheight(4*number_detectors)
     fig.set_figwidth(14)
@@ -170,7 +173,8 @@ def phs_wires_vs_grids_plot(ce, bus_start, bus_stop, title):
 # =============================================================================
 
 
-def tof_histogram(df, number_bins, title, label=None, norm=1, interval=None):
+def tof_histogram(df, number_bins, title, label=None, norm=1, interval=None,
+                  color=None):
     """
     Histograms the ToF values in the clustered data.
 
@@ -190,13 +194,14 @@ def tof_histogram(df, number_bins, title, label=None, norm=1, interval=None):
     plt.title('ToF - %s' % title)
     plt.xlabel('ToF ($\mu$s)')
     plt.ylabel('Counts')
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     # Histogram data
     hist, bin_edges, *_ = plt.hist((df.tof * 62.5e-9 * 1e6 + time_offset) % period_time,
                                    bins=number_bins, zorder=4, histtype='step',
-                                   label=label, weights=weights, range=interval)
+                                   label=label, weights=weights, range=interval,
+                                   color=color)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     #return hist, bin_centers
 
@@ -246,15 +251,15 @@ def ce_2d_plot(ce, measurement_time, bus_start, bus_stop, title):
         vmax = 1
     # Plot data
     fig = plt.figure()
-    fig.suptitle('Coincident events - %s' % title)
+    #fig.suptitle('Coincident events - %s' % title)
     number_detectors = (bus_stop - bus_start)//3 + 1
-    fig.set_figheight(5*number_detectors)
+    fig.set_figheight(4*number_detectors)
     if number_detectors == 1:
         width = (14/3) * ((bus_stop - bus_start) + 1)
         rows = ((bus_stop - bus_start) + 1)
     else:
         width = 14
-        rows = 3
+        rows = 4
     fig.set_figwidth(width)
     histograms = []
     for i, bus in enumerate(range(bus_start, bus_stop+1)):
@@ -263,7 +268,7 @@ def ce_2d_plot(ce, measurement_time, bus_start, bus_stop, title):
         number_events = ce_bus.shape[0]
         events_per_s = number_events/duration
         events_per_m_s = events_per_s
-        sub_title = ('Bus %d\n(%d events, %.3f events/s)' % (bus, number_events, events_per_s))
+        sub_title = ('Bus %d\n(%d events, %.6f events/s)' % (bus, number_events, events_per_s))
         plt.subplot(number_detectors, rows, i+1)
         fig, h = plot_2D_bus(fig, sub_title, ce_bus, vmin, vmax, duration)
         histograms.append(h)
@@ -365,7 +370,7 @@ def ce_3d_plot(df, title):
     #fig['layout']['scene1']['xaxis'].update(showticklabels=False)
     #fig['layout']['scene1']['yaxis'].update(showticklabels=False)
     #fig['layout']['scene1']['zaxis'].update(showticklabels=False)
-    fig['layout'].update(title='Coincidences (3D) - %s' % title)
+    #fig['layout'].update(title='Coincidences (3D) - %s' % title)
     fig['layout']['scene1'].update(scene)
     fig.layout.showlegend = False
     py.offline.init_notebook_mode()
@@ -396,11 +401,6 @@ def ce_projections_plot(df, bus_start, bus_stop, title, norm=1):
     """
     # Ensure we only plot coincident events
     df = df[(df.wch != -1) & (df.gch != -1)]
-    # Define figure and set figure properties
-    fig = plt.figure()
-    fig.suptitle('Projections - %s' % title)
-    fig.set_figheight(4)
-    fig.set_figwidth(14)
     # Calculate colorbar limits
     if df.shape[0] != 0:
         vmin = 1
@@ -413,22 +413,22 @@ def ce_projections_plot(df, bus_start, bus_stop, title, norm=1):
     plt.subplot(1, 3, 1)
     h_front = plot_front(wChs, gChs, Buses, bus_start, bus_stop,
                          None, None,
-                         #5e-4, 7e-3,
+                         #1e4, 1e6,
                          norm)
     plt.subplot(1, 3, 2)
     h_top = plot_top(wChs, gChs, Buses, bus_start, bus_stop,
                      None, None,
-                     #1e-3, 2e-2,
+                     #1e4, 1e6,
                      norm)
     plt.subplot(1, 3, 3)
     h_side = plot_side(wChs, gChs, Buses,
                        None, None,
-                       #4e-5, 2e-3,
+                      # 1e4, 5e5,
                        norm)
     # Collect all histograms and tighted layout
     plt.tight_layout()
-    histograms = [h_front, h_top, h_side]
-    return fig, histograms
+    #histograms = [h_front, h_top, h_side]
+    #return histograms
 
 
 # =============================================================================
@@ -499,7 +499,7 @@ def rate_plot(df, number_bins, label):
 
 
     # Prepare figure
-    time = (df.time)/(60 ** 2)
+    time = (df.time * 62.5e-9)/(60 ** 2)
     plt.title('Rate vs Time')
     plt.xlabel('Time (hours)')
     plt.ylabel('Rate (events/s)')
@@ -510,7 +510,7 @@ def rate_plot(df, number_bins, label):
     hist, bin_edges = np.histogram(time, bins=number_bins)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     delta_t = (60 ** 2) * (bin_centers[1] - bin_centers[0])
-    plt.plot(bin_centers, hist/delta_t, label=label, zorder=5)
+    plt.plot(bin_centers, hist/delta_t, marker='o', linestyle='--', label=label, zorder=5)
 
 
 # =============================================================================
