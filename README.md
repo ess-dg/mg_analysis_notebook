@@ -1,4 +1,4 @@
-# Multi-Grid V20 Measurements, 23/9-2019 -> 6/10-2019
+# Multi-Grid detector: data analysis tools & jupyter notebooks
 
 Notebook for analysis of Multi-Grid data. Contains a codebase used by notebooks for the following measurements:
 
