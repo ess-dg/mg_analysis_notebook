@@ -85,12 +85,10 @@ def get_peak_area(energies, x0, sigma, bin_width,
     area = c
     uncertainty = dc
 
-    # Plot background to cross-check calculation
-    plt.axhline(y=b*(1/background_range_in_meV)*bin_width,
-                color='black', linestyle='--', linewidth=2,
-                label='Background')
+    # Calculate background to cross-check calculation
+    background_level = b*(1/background_range_in_meV)*bin_width
 
-    return area, uncertainty
+    return area, uncertainty, background_level
 
 # =============================================================================
 #                            CREATE DIRECTORY

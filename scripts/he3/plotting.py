@@ -54,7 +54,9 @@ def tof_histogram(df, number_bins, label=None, interval=None, color=None):
     period_time = (1/14) * 1e6
     hist, bin_edges, *_ = plt.hist((df.tof * 1e6 + time_offset) % period_time,
                                    histtype='step', zorder=5, bins=number_bins,
-                                   label=label, range=interval, color=color)
+                                   label=label, range=interval, color=color,
+                                   #weights=(1/89670)*np.ones(len(df.tof))
+                                   )
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     plt.xlabel('ToF (µs)')
     plt.ylabel('Counts')

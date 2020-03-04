@@ -191,8 +191,8 @@ def tof_histogram(df, number_bins, title, label=None, norm=1, interval=None,
     period_time = (1/14) * 1e6
     weights = np.ones(df.shape[0])*norm
     # Prepare figure
-    plt.title('ToF - %s' % title)
-    plt.xlabel('ToF ($\mu$s)')
+    #plt.title('ToF - %s' % title)
+    plt.xlabel('tof ($\mu$s)')
     plt.ylabel('Counts')
     #plt.yscale('log')
     plt.grid(True, which='major', linestyle='--', zorder=0)
@@ -335,11 +335,11 @@ def ce_3d_plot(df, title):
                                z=hist[2],
                                mode='markers',
                                marker=dict(size=5,
-                                           color=np.log10(hist[3]),
+                                           color=hist[3],#np.log10(hist[3]),
                                            colorscale='Jet',
                                            opacity=1,
                                            colorbar=dict(thickness=20,
-                                                         title='log10(counts)'
+                                                         title='counts'#'log10(counts)'
                                                          ),
                                            #cmin=1,
                                            #cmax=5.5
@@ -376,7 +376,7 @@ def ce_3d_plot(df, title):
     py.offline.init_notebook_mode()
     py.offline.iplot(fig)
     #py.offline.plot(fig, filename='../output/Ce3Dhistogram.html', auto_open=True)
-    #pio.write_image(fig, '../output/Ce3Dhistogram.pdf')
+    pio.write_image(fig, '../output/Ce3Dhistogram.pdf')
 
 
 # =============================================================================

@@ -96,49 +96,65 @@ def calculate_count_rate(ToF_values, measurement_time, number_bins):
 #                      LAYERS INVESTIGATION - TOF
 # =============================================================================
 
-def layers_tof(df, title):
+def layers_tof(df, title, number_bins=100):
     # Define parameters for ToF-histogram
     time_offset = (0.6e-3) * 1e6
     period_time = (1/14) * 1e6
-    number_bins = 250
+    #number_bins = 100
     # Define beam hit position
-    GRID = 88
+    GRID_MIN = 87
+    GRID_MAX = 89
     ROW = 6
     # Iterate through the first ten layers and compare
     fig = plt.figure()
-    fig.set_figheight(7)
-    fig.set_figwidth(14)
-    plt.title('Layers - %s' % title)
+    fig.set_figheight(5)
+    fig.set_figwidth(6)
+    #plt.title('Layers - %s' % title)
     df_red = df[(((df.bus * 4) + df.wch//20) == ROW) &
-                (df.gch == GRID)]
-    plt.hist((df_red.tof * 62.5e-9 * 1e6 + time_offset) % period_time,
-             bins=number_bins,
-             #range=[28e3, 28.5e3],
-             range=[40500, 40900],
-             zorder=4,
-             histtype='step',
-             color='blue',
-             label='All layers')
+                (df.gch >= GRID_MIN) &
+                (df.gch <= GRID_MAX)]
+    #plt.hist((df_red.tof * 62.5e-9 * 1e6 + time_offset) % period_time,
+    #         bins=number_bins,
+    #         #range=[28e3, 28.5e3],
+    #         #range=[40500, 40900],
+    #         range=[19700, 20100],
+    #         zorder=4,
+    #         histtype='step',
+    #         color='black',
+    #         label='All')
     for layer in range(0, 20):
         # Filter data so that we are only using data from a single voxel
         df_red = df[((df.wch % 20) == layer) &
                     (((df.bus * 4) + df.wch//20) == ROW) &
-                    (df.gch == GRID)]
+                    (df.gch >= GRID_MIN) &
+                    (df.gch <= GRID_MAX)]
         # Plot ToF-histogram
+        if layer <= 1:
+            label = 'Multi-Grid, layer %d' % (layer + 1)
+        elif layer == 2:
+            label = '...'
+        elif layer == 19:
+            label = 'Multi-Grid, layer %d' % (layer + 1)
+        else:
+            label = None
         plt.hist((df_red.tof * 62.5e-9 * 1e6 + time_offset) % period_time,
                  bins=number_bins,
-                 #range=[28e3, 28.5e3],
-                 range=[40500, 40900],
+                 #range=[28150, 28.4e3],
+                 #range=[40610, 40800],
+                 #range=[38500, 38900],
+                 range=[19700, 20050],
                  zorder=4,
                  histtype='step',
-                 label='Layer %d' % layer)
+                 label=label,
+                 #weights=(1/9656)*np.ones(len(df_red.tof))
+                 )
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
-    plt.xlabel('ToF (µs)')
+    plt.xlabel('tof (µs)')
     plt.ylabel('Counts')
     #plt.ylim(0, 300)
     #plt.title('ToF from different layers (gCh = 88, row = 6)')
-    plt.legend()
+    plt.legend(loc=1)#, title='Layer')
     return fig
 
 
@@ -165,13 +181,15 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     # Define region of the peak we want to study
     left, right = mg_hf.A_to_meV(peak + 0.005), mg_hf.A_to_meV(peak - 0.005)
     # Iterate through all layers, a single voxel from each layer, saving the FWHMs
-    fig = plt.figure()
-    fig.set_figwidth(15)
-    fig.set_figheight(5)
-    plt.subplot(1, 3, 1)
+    fig_1 = plt.figure()
+    fig_1.set_figwidth(6)
+    fig_1.set_figheight(5)
+    #plt.subplot(1, 3, 1)
     FWHMs = []
     distances = []
     errors = []
+
+
     for layer in range(0, 20):
         # Filter data so that we are only using data from a single voxel
         df_red = df_mg[((df_mg.wch % 20) == layer) &
@@ -189,8 +207,16 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
                                                     x0_guess, sigma_guess)
         a_err, x0_err, sigma_err = perr
         # Plot
+        if layer <= 9:
+            label = '%d' % (layer + 1)
+        elif layer == 10:
+            label = '...'
+        elif layer == 19:
+            label = '%d' % (layer + 1)
+        else:
+            label = None
         plt.errorbar(bins, hist, np.sqrt(hist), marker='.', linestyle='-', fmt='.-', capsize=5,
-                     zorder=5, label='Layer: %d' % layer)
+                     zorder=5, label=label)
         xx = np.linspace(fit_left, fit_right, 1000)
         norm = (max(hist)/max(Gaussian(xx, a, x0, sigma)))
         plt.plot(xx, Gaussian(xx, a, x0, sigma)*norm, color='black', linestyle='-', label=None, zorder=50)
@@ -209,11 +235,13 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     plt.xlabel('Energy (meV)')
     plt.ylabel('Counts')
-    plt.title('Energy Histogram MG, peak at %.2f Å' % peak)
-    plt.legend(loc=1)
-    plt.yscale('log')
+    #plt.title('Energy Histogram MG, peak at %.2f Å' % peak)
+    plt.legend(loc=2, title='Layer')
+    #plt.yscale('log')
+
+    fig_2 = plt.figure()
     # Plot He-3
-    plt.subplot(1, 3, 2)
+    #plt.subplot(1, 3, 2)
     energies_He3 = he3_energy.get_energies(df_he3, offset_he3)
     hist, bins = mg_hf.get_hist(energies_He3, number_bins, left, right)
     a_guess, x0_guess, sigma_guess = mg_hf.get_fit_parameters_guesses(hist, bins)
@@ -238,7 +266,11 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     plt.title('Energy Histogram He-3, peak at %.2f Å' % peak)
     plt.legend()
     plt.xlim(left, right)
-    plt.yscale('log')
+    #plt.yscale('log')
+
+    fig_3 = plt.figure()
+    fig_3.set_figwidth(14)
+    fig_3.set_figheight(5)
     # Plot third subplot, containing FWHM for the different layers, as well as
     # linear fit on MG data.
     paras, pcov = np.polyfit(distances, FWHMs, 1, w=1/np.array(errors), cov=True)
@@ -246,24 +278,24 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     k_err, m_err = np.sqrt(np.diag(pcov))
     upper_k, upper_m = k - k_err, m + m_err
     lower_k, lower_m = k + k_err, m - m_err
-    plt.subplot(1, 3, 3)
-    plt.title('FWHM vs distance')
+    #plt.subplot(1, 3, 3)
+    #plt.title('FWHM vs distance')
     plt.ylabel('FWHM (meV)')
-    plt.xlabel('Distance to Fermi Chopper (m)')
+    plt.xlabel('Distance to Fermi-chopper (m)')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     plt.errorbar(distances, FWHMs, errors, marker='.', capsize=5, zorder=5,
-                 label='FWHM: Multi-Grid detector', color='blue', linestyle='')
+                 label='Multi-Grid detector', color='blue', linestyle='')
     plt.errorbar(he3_tube_position, FWHM_He3, FWHM_He3_err,
                  marker='.', color='red', capsize=5, zorder=5,
-                 label='FWHM: Helium-3 tube')
+                 label='Helium-3 tube')
     start_lim = 0
     end_lim = 1
     xx = np.linspace(start_lim, end_lim, 100)
     plt.plot(xx, linear(xx, upper_k, upper_m), color='blue',
              linestyle='dashed', label=None)
     plt.plot(xx, linear(xx, k, m), color='blue',
-             linestyle='dashed', label='Fit: Multi-Grid detector')
+             linestyle='dashed', label='Multi-Grid detector, linear fit')
     plt.plot(xx, linear(xx, lower_k, lower_m), color='blue',
              linestyle='dashed', label=None)
     plt.xlim(start_lim,
@@ -275,6 +307,8 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     # Get values at He-3 tube
     idx = mg_hf.find_nearest(xx, he3_tube_position)
     interpolated_mg_value_at_he3 = linear(xx[idx], k, m)
+    inter_mg_upper = linear(xx[idx], upper_k, upper_m)
+    inter_mg_lower = linear(xx[idx], lower_k, lower_m)
     he3_value = FWHM_He3
 
     # Interpolate He-3 to MG
@@ -284,16 +318,16 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     y_he3_inter = [FWHM_He3, FWHM_He3_interpolated]
     err_he3_iter = [FWHM_He3_err,
                     FWHM_He3_err*(mg_first_voxel_position/he3_tube_position)]
-    plt.errorbar(x_he3_inter, y_he3_inter, err_he3_iter,
-                 marker='s', linestyle='', color='red',
-                 label='FWHM interpolation: Helium-3 tube')
+    #plt.errorbar(x_he3_inter, y_he3_inter, err_he3_iter,
+    #             marker='s', linestyle='', color='red',
+    #             label='FWHM interpolation: Helium-3 tube')
     paras = np.polyfit(x_he3_inter, y_he3_inter, 1,
                        w=1/np.array(err_he3_iter), cov=False)
     k_he3, m_he3 = paras[0], paras[1]
-    plt.plot(xx, linear(xx, k_he3, m_he3), color='red', linestyle='dashed',
-             label='Fit: Helium-3 tube')
-    plt.legend()
-    return fig, interpolated_mg_value_at_he3, he3_value, k, k_he3
+    #plt.plot(xx, linear(xx, k_he3, m_he3), color='red', linestyle='dashed',
+    #         label='Fit: Helium-3 tube')
+    plt.legend(title='FWHM')
+    return [fig_1, fig_3], interpolated_mg_value_at_he3, he3_value, k, k_he3, [inter_mg_lower, inter_mg_upper], FWHM_He3_err
 
 
 # =============================================================================
@@ -318,25 +352,18 @@ def investigate_layers_delta_ToF(df_MG, df_He3, origin_voxel):
     distance_He3 = 28.239
     voxel_to_distance_dict = get_distances(origin_voxel, 0)
     # Get ToF He-3
-    ToF_He3 = (df_He3.ToF * (8e-9) * 1e6 + time_offset) % period_time
+    ToF_He3 = (df_He3.tof * 1e6 + time_offset) % period_time
     # Declare storage vectors
     FWHMs = []
     distances = []
     errors = []
-    # Prepare output paths
-    dirname = os.path.dirname(__file__)
-    output_folder = os.path.join(dirname, '../../../../output/Layers/')
-    animation_path = os.path.join(dirname, '../../../../output/layers_animation.gif')
-    mkdir_p(output_folder)
     # Iterate through all layers
+    fig = plt.figure()
     for layer in range(0, 20):
-        print(layer)
-        fig = plt.figure()
         # Filter data so that we are only using data from a single voxel
         MG_red = df_MG[((df_MG.wCh % 20) == layer) &
                     (((df_MG.Bus * 4) + df_MG.wCh//20) == ROW) &
                     (df_MG.gCh == GRID)]
-        print(MG_red)
         ToF_MG = (MG_red.ToF * (62.5e-9) * 1e6 + time_offset) % period_time
         hist_MG, bins_MG = np.histogram(ToF_MG, range=[start, stop], bins=number_bins)
         bin_centers_MG = 0.5 * (bins_MG[1:] + bins_MG[:-1])
@@ -417,14 +444,7 @@ def investigate_layers_delta_ToF(df_MG, df_He3, origin_voxel):
         output_path = output_folder + file_name
         fig.savefig(output_path, bbox_inches='tight')
         plt.close()
-    # Animate
-    images = []
-    files = os.listdir(output_folder)
-    files = [file[:-4] for file in files if file[-9:] != '.DS_Store' and file != '.gitignore']
-    for file in sorted(files, key=int):
-        images.append(imageio.imread(output_folder + file + '.png'))
-    imageio.mimsave(animation_path, images)
-    shutil.rmtree(output_folder, ignore_errors=True)
+
     # Plot FWHM
     fig = plt.figure()
     plt.xlabel('Distance [m]')
@@ -433,6 +453,7 @@ def investigate_layers_delta_ToF(df_MG, df_He3, origin_voxel):
     plt.errorbar(distances, FWHMs, errors, label='MG', fmt='.-', capsize=5, linestyle='', color='blue', zorder=5)
     plt.errorbar(distance_He3, FWHM_he3_fit, FWHM_he3_fit_err, label='He-3',
                  fmt='.-', capsize=5, color='red', linestyle='', zorder=5)
+
     # Fit MG data
     paras, pcov = np.polyfit(distances, FWHMs, 1, w=1/np.array(errors), cov=True)
     k, m = paras[0], paras[1]

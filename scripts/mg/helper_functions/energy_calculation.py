@@ -37,6 +37,10 @@ def get_energies(df, distance_offset=0):
     d = distance_mapping[buses, gChs, wChs]
     # Calculate energy Ef of detected neutron
     energy = ((NEUTRON_MASS/2) * ((d/ToF) ** 2)) * JOULE_TO_meV
+
+    #indices = (energy > 10.6) & (energy < 10.8)
+    #print(max(ToF[indices]*1e6))
+    #print(min(ToF[indices]*1e6))
     return energy.values
 
 
