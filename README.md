@@ -18,7 +18,7 @@ conda install -c plotly plotly
 
 Clone the repository:
 ```
-git clone https://github.com/AlexanderBackis/mg_analysis_notebook.git
+git clone https://github.com/ess-dg/mg_analysis_notebook.git
 ```
 
 ## Execution
