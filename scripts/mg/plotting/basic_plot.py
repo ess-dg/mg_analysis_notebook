@@ -149,6 +149,8 @@ def phs_wires_vs_grids_plot(ce, bus_start, bus_stop, title):
     fig = plt.figure()
     #fig.suptitle('PHS (2D) - %s' % title)
     number_detectors = ((bus_stop + 1) - bus_start)//3
+    if number_detectors == 0:
+        number_detectors = 1
     fig.set_figheight(4*number_detectors)
     fig.set_figwidth(14)
     # Set color limits
