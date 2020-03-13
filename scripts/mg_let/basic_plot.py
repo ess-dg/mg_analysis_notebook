@@ -131,7 +131,7 @@ def clusters_phs_plot(clusters, bus, vmin, vmax):
 #                          Coincidence Histogram (2D)
 # =============================================================================
 
-def clusters_2d_plot(clusters, title, vmin, vmax):
+def clusters_2d_plot(clusters, title, vmin, vmax, duration):
     """
 
     """
@@ -139,12 +139,13 @@ def clusters_2d_plot(clusters, title, vmin, vmax):
     plt.hist2d(clusters.wch, clusters.gch, bins=[80, 40],
                range=[[-0.5, 79.5], [79.5, 119.5]],
                vmin=vmin, vmax=vmax,
-               norm=LogNorm(), cmap='jet')
+               norm=LogNorm(), cmap='jet',
+               weights=(1/duration)*np.ones(len(clusters.wch)))
     plt.xlabel('Wire (Channel number)')
     plt.ylabel('Grid (Channel number)')
     plt.title(title)
     cbar = plt.colorbar()
-    cbar.set_label('Counts')
+    cbar.set_label('Counts/s')
 
 
 # =============================================================================
