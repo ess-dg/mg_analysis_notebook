@@ -22,7 +22,8 @@ git clone https://github.com/ess-dg/mg_analysis_notebook.git
 ```
 
 ## Execution
-Navigate to mg_analysis_notebook and enter:
+Navigate to mg_analysis_notebook->scripts and enter:
 ```
 jupyter notebook
 ```
+Finally, select the notebook of interest.
