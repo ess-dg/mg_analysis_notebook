@@ -5,6 +5,7 @@
 import os
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+import matplotlib.patheffects as path_effects
 import numpy as np
 import pandas as pd
 import plotly as py
@@ -44,11 +45,32 @@ def phs_1d_plot(events, number_bins, bus, vmin, vmax):
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     plt.legend()
 
+def phs_clusters_1d_plot(clusters, clusters_uf, number_bins, bus, duration):
+    # Clusters filtered
+    plt.hist(clusters.wadc, bins=number_bins, histtype='step',
+             zorder=5, range=[0, 8000], label='Wires (filtered)', color='blue',
+             weights=(1/duration)*np.ones(len(clusters.wadc)))
+    plt.hist(clusters.gadc, bins=number_bins, histtype='step',
+             zorder=5, range=[0, 8000], label='Grids (filtered)', color='red',
+             weights=(1/duration)*np.ones(len(clusters.gadc)))
+    # Clusters unfiltered
+    plt.hist(clusters_uf.wadc, bins=number_bins, histtype='step',
+             zorder=5, range=[0, 8000], label='Wires', color='cyan',
+             weights=(1/duration)*np.ones(len(clusters_uf.wadc)))
+    plt.hist(clusters_uf.gadc, bins=number_bins, histtype='step',
+             zorder=5, range=[0, 8000], label='Grids', color='magenta',
+             weights=(1/duration)*np.ones(len(clusters_uf.gadc)))
+    plt.title('Bus: %d' % bus)
+    plt.xlabel('Charge (ADC channels)')
+    plt.ylabel('Counts/s')
+    plt.grid(True, which='major', linestyle='--', zorder=0)
+    plt.grid(True, which='minor', linestyle='--', zorder=0)
+    plt.legend()
+
 
 # =============================================================================
 #                                   PHS (2D)
 # =============================================================================
-
 
 def phs_2d_plot(events, bus, vmin, vmax):
     """
@@ -73,8 +95,6 @@ def phs_2d_plot(events, bus, vmin, vmax):
                    cmap='jet')
     cbar = plt.colorbar()
     cbar.set_label('Counts')
-
-
 
 
 # =============================================================================
@@ -286,48 +306,67 @@ def ce_projections_plot(df, bus_start, bus_stop, title, norm=1):
 #                               Multiplicity
 # =============================================================================
 
-def multiplicity_plot(df, bus_start, bus_stop, title):
+def multiplicity_plot(clusters_uf, bus, duration):
     """
-    Histograms multiplicity of wires versus grids in the clustered neutron
-    events.
 
-    Args:
-        df (DataFrame): Clustered events
-
-    Returns:
-        fig (Figure): Figure containing nine 2D coincidences histograms, one
-                      for each bus.
 
     """
-    def plot_multiplicity_bus(df, bus, vmin, vmax):
-        # Plot data
-        plt.hist2d(df.wm, df.gm, bins=[80, 40], range=[[0, 80], [0, 40]],
-                   norm=LogNorm(), vmin=vmin, vmax=vmax, cmap='jet')
-        plt.xlabel('Wire Multiplicity')
-        plt.ylabel('Grid Multiplicity')
-        plt.colorbar()
-        plt.tight_layout()
-        plt.title('Bus %d\n(%d events)' % (bus, df.shape[0]))
-    # Set limits
-    if df.shape[0] != 0:
-        vmin = 1
-        vmax = df.shape[0] // 9 + 10
-    else:
-        vmin = 1
-        vmax = 1
-    # Prepare figure
-    fig = plt.figure()
-    fig.suptitle('Multiplicity - %s' % title)
-    number_detectors = ((bus_stop + 1) - bus_start)//3
-    fig.set_figheight(4*number_detectors)
-    fig.set_figwidth(14)
-    # Iterate through all buses
-    for i, bus in enumerate(range(bus_start, bus_stop+1)):
-        plt.subplot(number_detectors, 3, i+1)
-        df_bus = df[df.bus == bus]
-        plot_multiplicity_bus(df_bus, bus, vmin, vmax)
+
+    # Plot data
+    plt.hist2d(clusters_uf.wm, clusters_uf.gm,
+               bins=[80, 40], range=[[0, 80], [0, 40]],
+               norm=LogNorm(),
+               #vmin=vmin, vmax=vmax,
+               cmap='jet',
+               weights=(1/duration)*np.ones(len(clusters_uf.wm)))
+    plt.xlabel('Wire Multiplicity')
+    plt.ylabel('Grid Multiplicity')
+    cbar = plt.colorbar()
+    cbar.set_label('Counts/s')
+    plt.title('Bus: %d' % bus)
     plt.tight_layout()
-    return fig
+
+
+def multiplicity_plot_perc(clusters_uf, bus, duration):
+    # Declare parameters
+    m_range = [0, 10, 0, 10]
+    # Plot data
+    hist, xbins, ybins, im = plt.hist2d(clusters_uf.wm, clusters_uf.gm,
+                                        bins=[m_range[1]-m_range[0]+1,
+                                              m_range[3]-m_range[2]+1],
+                                        range=[[m_range[0], m_range[1]+1],
+                                               [m_range[2], m_range[3]+1]],
+                                        norm=LogNorm(),
+                                        #vmin=vmin, vmax=vmax,
+                                        cmap='jet',
+                                        weights=(1/duration)*np.ones(len(clusters_uf.wm)))
+    # Iterate through all squares and write percentages
+    tot = clusters_uf.shape[0] * (1/duration)
+    font_size = 8
+    for i in range(len(ybins)-1):
+        for j in range(len(xbins)-1):
+            if hist[j, i] > 0:
+                text = plt.text(xbins[j]+0.5, ybins[i]+0.5,
+                                '%.d%%' % (100*(hist[j, i]/tot)),
+                                color="w", ha="center", va="center",
+                                fontweight="bold", fontsize=font_size)
+                text.set_path_effects([path_effects.Stroke(linewidth=1,
+                                                           foreground='black'),
+                                       path_effects.Normal()])
+    # Set ticks on axis
+    ticks_x = np.arange(m_range[0], m_range[1]+1, 1)
+    locs_x = np.arange(m_range[0] + 0.5, m_range[1]+1.5, 1)
+    ticks_y = np.arange(m_range[2], m_range[3]+1, 1)
+    locs_y = np.arange(m_range[2] + 0.5, m_range[3]+1.5, 1)
+    plt.xticks(locs_x, ticks_x)
+    plt.yticks(locs_y, ticks_y)
+    plt.xlabel("Wire multiplicity")
+    plt.ylabel("Grid multiplicity")
+    cbar = plt.colorbar()
+    cbar.set_label('Counts/s')
+    plt.title('Bus: %d' % bus)
+    plt.tight_layout()
+
 
 # =============================================================================
 #                                   Timestamp
