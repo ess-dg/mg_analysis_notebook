@@ -27,3 +27,12 @@ Navigate to mg_analysis_notebook->scripts and enter:
 jupyter notebook
 ```
 Finally, select the notebook of interest.
+
+## Basic usage
+1. Execute cell which imports packages
+2. Execute cells which define functions
+3. Use the 'extract_and_save'-function to extract clusters and events. The function takes a 'run' argument, name of the measurement run, and a 'raw_path' argument, location of the raw data. It then extracts, clusters and save the data in the 'processed folder'.
+4. Use the 'load'-function to load clustered data into the notebook, by specifiying a run
+5. Define any filters you would like to apply on the data
+6. Use the plotting functions to visualize the data
+
