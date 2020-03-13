@@ -364,19 +364,7 @@ def grid_counts_plot(events, number_bins, bus, area):
 
     """
 
-    # Prepare figure
-    plt.title('Bus: %d' % bus)
-    plt.xlabel('Time (hours)')
-    plt.ylabel('Rate (events/s/m$^2$)')
-    plt.grid(True, which='major', zorder=0)
-    plt.grid(True, which='minor', linestyle='--', zorder=0)
-    # Plot
-    time = (clusters.time * 62.5e-9)/(60 ** 2)
-    hist, bin_edges = np.histogram(time, bins=number_bins)
-    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
-    delta_t = (60 ** 2) * (bin_centers[1] - bin_centers[0])
-    plt.plot(bin_centers, (hist/delta_t)/area, marker='o', linestyle='--',
-            zorder=5, color='black')
+    pass
 
 def tof_histogram(clusters, number_bins, bus):
     """
