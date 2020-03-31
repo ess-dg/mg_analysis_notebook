@@ -102,7 +102,7 @@ def phs_2d_plot(events, bus, vmin, vmax):
 # =============================================================================
 
 
-def clusters_phs_plot(clusters, bus, vmin, vmax):
+def clusters_phs_plot(clusters, bus, duration, vmin, vmax):
     """
     Histograms ADC charge from wires vs grids, one for each bus, showing the
     relationship between charge collected by wires and charge collected by
@@ -122,9 +122,10 @@ def clusters_phs_plot(clusters, bus, vmin, vmax):
     bins = [200, 200]
     ADC_range = [[0, 10000], [0, 10000]]
     plt.hist2d(clusters.wadc, clusters.gadc, bins=bins, norm=LogNorm(),
-               range=ADC_range, vmin=vmin, vmax=vmax, cmap='jet')
+               range=ADC_range, vmin=vmin, vmax=vmax, cmap='jet',
+               weights=(1/duration)*np.ones(len(clusters.wadc)))
     cbar = plt.colorbar()
-    cbar.set_label('Counts')
+    cbar.set_label('Counts/s')
 
 
 # =============================================================================
@@ -328,7 +329,7 @@ def multiplicity_plot(clusters_uf, bus, duration):
     plt.tight_layout()
 
 
-def multiplicity_plot_perc(clusters_uf, bus, duration):
+def multiplicity_plot_perc(clusters_uf, bus, duration, vmin=None, vmax=None):
     # Declare parameters
     m_range = [0, 10, 0, 10]
     # Plot data
@@ -338,7 +339,7 @@ def multiplicity_plot_perc(clusters_uf, bus, duration):
                                         range=[[m_range[0], m_range[1]+1],
                                                [m_range[2], m_range[3]+1]],
                                         norm=LogNorm(),
-                                        #vmin=vmin, vmax=vmax,
+                                        vmin=vmin, vmax=vmax,
                                         cmap='jet',
                                         weights=(1/duration)*np.ones(len(clusters_uf.wm)))
     # Iterate through all squares and write percentages
@@ -392,6 +393,7 @@ def rate_plot(clusters, number_bins, bus, area):
     delta_t = (60 ** 2) * (bin_centers[1] - bin_centers[0])
     plt.plot(bin_centers, (hist/delta_t), marker='o', linestyle='--',
             zorder=5, color='black')
+    return min((hist/delta_t)), max((hist/delta_t))
 
 
 # =============================================================================

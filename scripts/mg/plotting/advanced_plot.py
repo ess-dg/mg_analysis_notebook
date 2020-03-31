@@ -215,8 +215,9 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
             label = '%d' % (layer + 1)
         else:
             label = None
-        plt.errorbar(bins, hist, np.sqrt(hist), marker='.', linestyle='-', fmt='.-', capsize=5,
-                     zorder=5, label=label)
+        plt.errorbar(bins, hist, np.sqrt(hist), marker='.', linestyle='-', #fmt='.-',
+                    #capsize=5,
+                    zorder=5, label=label)
         xx = np.linspace(fit_left, fit_right, 1000)
         norm = (max(hist)/max(Gaussian(xx, a, x0, sigma)))
         plt.plot(xx, Gaussian(xx, a, x0, sigma)*norm, color='black', linestyle='-', label=None, zorder=50)
@@ -236,7 +237,8 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     plt.xlabel('Energy (meV)')
     plt.ylabel('Counts')
     #plt.title('Energy Histogram MG, peak at %.2f Å' % peak)
-    plt.legend(loc=2, title='Layer')
+    plt.legend(loc=1, title='Layer')
+    #plt.title('Peak at %.2f Å' % peak)
     #plt.yscale('log')
 
     fig_2 = plt.figure()
@@ -269,8 +271,8 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     #plt.yscale('log')
 
     fig_3 = plt.figure()
-    fig_3.set_figwidth(14)
-    fig_3.set_figheight(5)
+    fig_3.set_figwidth(6)  # 14
+    fig_3.set_figheight(5)  #  5
     # Plot third subplot, containing FWHM for the different layers, as well as
     # linear fit on MG data.
     paras, pcov = np.polyfit(distances, FWHMs, 1, w=1/np.array(errors), cov=True)
@@ -284,10 +286,12 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     plt.xlabel('Distance to Fermi-chopper (m)')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
-    plt.errorbar(distances, FWHMs, errors, marker='.', capsize=5, zorder=5,
+    plt.errorbar(distances, FWHMs, errors, marker='.', #capsize=5,
+                 zorder=5,
                  label='Multi-Grid detector', color='blue', linestyle='')
     plt.errorbar(he3_tube_position, FWHM_He3, FWHM_He3_err,
-                 marker='.', color='red', capsize=5, zorder=5,
+                 marker='.', color='red', #capsize=5,
+                 zorder=5,
                  label='Helium-3 tube')
     start_lim = 0
     end_lim = 1
@@ -300,10 +304,11 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
              linestyle='dashed', label=None)
     plt.xlim(start_lim,
              end_lim)
-    plt.ylim(0, 0.4)
+
     plt.tight_layout()
-    plt.ylim(linear(xx[mg_hf.find_nearest(xx, start_lim)], k, m)*0.9,
-             linear(xx[mg_hf.find_nearest(xx, end_lim)], k, m)*1.1)
+    #plt.ylim(linear(xx[mg_hf.find_nearest(xx, start_lim)], k, m)*0.9,
+    #         linear(xx[mg_hf.find_nearest(xx, end_lim)], k, m)*1.1)
+    plt.ylim(0, linear(xx[mg_hf.find_nearest(xx, end_lim)], k, m)*1.1)
     # Get values at He-3 tube
     idx = mg_hf.find_nearest(xx, he3_tube_position)
     interpolated_mg_value_at_he3 = linear(xx[idx], k, m)
@@ -326,6 +331,7 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     k_he3, m_he3 = paras[0], paras[1]
     #plt.plot(xx, linear(xx, k_he3, m_he3), color='red', linestyle='dashed',
     #         label='Fit: Helium-3 tube')
+    #plt.title('Peak at %.2f Å' % peak)
     plt.legend(title='FWHM')
     return [fig_1, fig_3], interpolated_mg_value_at_he3, he3_value, k, k_he3, [inter_mg_lower, inter_mg_upper], FWHM_He3_err
 
