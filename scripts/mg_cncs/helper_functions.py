@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 
 def import_delimiter_table():
     # Import excel files
@@ -69,6 +69,5 @@ def get_measurement_time(folder_path):
     # Iterate through all files in folder
     file_names = [f for f in os.listdir(folder_path) if f[-4:] == '.bin']
     file_paths = append_folder_and_files(folder_path + '/', file_names)
-    start = os.path.getmtime(file_paths[0])
-    stop = os.path.getmtime(file_paths[-1])
-    return (stop - start)
+    duration = len(file_paths) * 60
+    return duration
