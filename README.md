@@ -29,7 +29,7 @@ jupyter notebook
 Finally, select the notebook of interest.
 
 ## How to create a new project
-1. Copy the 'template_notebook.ipynb' script 
+1. Navigate to 'scripts' and copy the 'template_notebook.ipynb'
 2. Rename the project and commit
 
 ## Basic usage
