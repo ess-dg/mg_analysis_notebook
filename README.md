@@ -28,6 +28,10 @@ jupyter notebook
 ```
 Finally, select the notebook of interest.
 
+## How to create a new project
+1. Copy the 'template_notebook.ipynb' script 
+2. Rename the project and commit
+
 ## Basic usage
 1. Execute cell which imports packages
 2. Execute cells which define functions
