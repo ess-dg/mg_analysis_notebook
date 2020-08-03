@@ -84,7 +84,7 @@ def extract_clusters(folder_path):
         clusters[0:8, start:(start+length)] = matrix[1:9, :] & ADC_MASK
         clusters[8, start:(start+length)] = matrix[9, :] & TIMESTAMP_MASK
         start += length
-    # Store in DataFrame (new runs with Ramsey)
+    # Store in DataFrame (new runs)
     clusters_df = pd.DataFrame({'w_adc_m1': clusters[6],
                                 'w_adc_m2': clusters[7],
                                 'w_ch_adc_m1': clusters[4],
@@ -99,6 +99,20 @@ def extract_clusters(folder_path):
                                 'g_ch_m2': pd.DataFrame({'a': clusters[5]})['a'].map(grid_di).values})
     # Store in DataFrame (cncs_run_6)
     #a, b, c, d, e, f, g, h = 0, 2, 1, 3, 4, 6, 5, 7
+    #clusters_df = pd.DataFrame({'w_adc_m1': clusters[a],
+    #                            'w_adc_m2': clusters[b],
+    #                            'w_ch_adc_m1': clusters[c],
+    #                            'w_ch_adc_m2': clusters[d],
+    #                            'g_adc_m1': clusters[e],
+    #                            'g_adc_m2': clusters[f],
+    #                            'g_ch_adc_m1': clusters[g],
+    #                            'g_ch_adc_m2': clusters[h],
+    #                            'tof': clusters[8],
+    #                            'w_ch_m1': pd.DataFrame({'a': clusters[c]})['a'].map(wire_di).values,
+    #                            'g_ch_m1': pd.DataFrame({'a': clusters[g]})['a'].map(grid_di).values,
+    #                            'g_ch_m2': pd.DataFrame({'a': clusters[h]})['a'].map(grid_di).values})
+    # Beam run with the mg.cncs
+    #a, b, c, d, e, f, g, h = 0, 1, 2, 3, 4, 5, 6, 7
     #clusters_df = pd.DataFrame({'w_adc_m1': clusters[a],
     #                            'w_adc_m2': clusters[b],
     #                            'w_ch_adc_m1': clusters[c],

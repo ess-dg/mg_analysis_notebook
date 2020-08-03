@@ -69,5 +69,6 @@ def get_measurement_time(folder_path):
     # Iterate through all files in folder
     file_names = [f for f in os.listdir(folder_path) if f[-4:] == '.bin']
     file_paths = append_folder_and_files(folder_path + '/', file_names)
+    print('Number files: %d' % len(file_paths))
     duration = len(file_paths) * 60
     return duration

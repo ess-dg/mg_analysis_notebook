@@ -90,6 +90,47 @@ def get_peak_area(energies, x0, sigma, bin_width,
 
     return area, uncertainty, background_level
 
+
+# =============================================================================
+#                            CALCULATE PEAK AREA - VERSION 2
+# =============================================================================
+
+def get_peak_area_2(energies, energies_b, x0, sigma, bin_width,
+                    peak_lower_limit, peak_upper_limit,
+                    norm, norm_b):
+    """
+
+    """
+
+    # Extract number of counts from regions of interest
+    peak_indexes = ((energies >= (x0 + peak_lower_limit*sigma)) &
+                    (energies <= (x0 + peak_upper_limit*sigma)))
+    background_indexes = ((energies_b >= (x0 + peak_lower_limit*sigma)) &
+                          (energies_b <= (x0 + peak_upper_limit*sigma)))
+    peak_counts = energies[peak_indexes]
+    background_counts = energies_b[background_indexes]
+
+    # Rename for easier calculation of uncertainties
+    a = len(peak_counts)
+    b = len(background_counts)
+    background_range_in_meV = sigma*abs((peak_upper_limit-peak_lower_limit))
+
+    # Calculate area by removing constant background level
+    c = a * norm - b * norm_b
+
+    # Calculate uncertainites
+    da = np.sqrt(a)
+    db = np.sqrt(b)
+    dc = np.sqrt((da*norm) ** 2 + (db*norm) ** 2)
+    area = c
+    uncertainty = dc
+
+    # Calculate background to cross-check calculation
+    background_level = b*norm_b*(1/background_range_in_meV)*bin_width
+
+    return area, uncertainty, background_level
+
+
 # =============================================================================
 #                            CREATE DIRECTORY
 # =============================================================================
@@ -137,7 +178,7 @@ def find_nearest(array, value):
 # =============================================================================
 
 def get_duration(df):
-    times = df.Time.values
+    times = df.time.values
     diff = np.diff(times)
     resets = np.where(diff < 0)
     duration_in_TDC_channels = sum(times[resets]) + times[-1]
@@ -189,3 +230,42 @@ def meV_to_A(energy):
 
 def A_to_meV(wavelength):
     return (81.81/(wavelength ** 2))
+
+
+# =============================================================================
+#                      FIND REDUCED E BASED ON LOCATION
+# =============================================================================
+
+def calculate_distance_borders(bins, hist, d=28.413):
+    def E_to_v(energy_in_meV):
+        # Define constants
+        JOULE_TO_meV = 6.24150913e18 * 1000
+        meV_TO_JOULE = 1/JOULE_TO_meV
+        NEUTRON_MASS = 1.674927351e-27
+        # Calculate velocity of neutron
+        v = np.sqrt((2*energy_in_meV*meV_TO_JOULE)/NEUTRON_MASS)
+        return v
+
+    def get_new_E(d, ToF, ToF_extra):
+        # Define constants
+        JOULE_TO_meV = 6.24150913e18 * 1000
+        NEUTRON_MASS = 1.674927351e-27
+        E_new = ((NEUTRON_MASS/2)*(d/(ToF+ToF_extra)) ** 2) * JOULE_TO_meV
+        return E_new
+
+    # Declare intervals, in m
+    distances = np.arange(0, 31, 5) * 1e-2
+    # Extract average E
+    average_E = bins[hist == max(hist)]
+    average_v = E_to_v(average_E)
+    # Calculate additional ToF for these distances
+    ToF_extras = distances / average_v
+    # Calculate reduced energy from additional ToF (d is from closest voxel)
+    ToF = d/average_v
+    E_reduced = {}
+    for distance in distances:
+        E_reduced.update({distance: 0})
+    for ToF_extra, distance in zip(ToF_extras, distances):
+        E_new = get_new_E(d, ToF, ToF_extra)
+        E_reduced[distance] = E_new
+    return E_reduced, distances

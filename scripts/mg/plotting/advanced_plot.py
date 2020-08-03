@@ -232,13 +232,14 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
         distances.append(distance)
         plt.xlim(left, right)
     # Stylize plot
+    plt.locator_params(nbins=5)
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     plt.xlabel('Energy (meV)')
     plt.ylabel('Counts')
     #plt.title('Energy Histogram MG, peak at %.2f Å' % peak)
     plt.legend(loc=1, title='Layer')
-    #plt.title('Peak at %.2f Å' % peak)
+    plt.title('Peak at %.2f Å' % peak)
     #plt.yscale('log')
 
     fig_2 = plt.figure()
@@ -297,11 +298,11 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     end_lim = 1
     xx = np.linspace(start_lim, end_lim, 100)
     plt.plot(xx, linear(xx, upper_k, upper_m), color='blue',
-             linestyle='dashed', label=None)
+             linestyle='dotted', label=None)
     plt.plot(xx, linear(xx, k, m), color='blue',
-             linestyle='dashed', label='Multi-Grid detector, linear fit')
+             linestyle='solid', label='Multi-Grid detector, linear fit')
     plt.plot(xx, linear(xx, lower_k, lower_m), color='blue',
-             linestyle='dashed', label=None)
+             linestyle='dotted', label=None)
     plt.xlim(start_lim,
              end_lim)
 
@@ -331,7 +332,7 @@ def investigate_layers_FWHM(peak, df_mg, df_he3, offset_mg, offset_he3):
     k_he3, m_he3 = paras[0], paras[1]
     #plt.plot(xx, linear(xx, k_he3, m_he3), color='red', linestyle='dashed',
     #         label='Fit: Helium-3 tube')
-    #plt.title('Peak at %.2f Å' % peak)
+    plt.title('Peak at %.2f Å' % peak)
     plt.legend(title='FWHM')
     return [fig_1, fig_3], interpolated_mg_value_at_he3, he3_value, k, k_he3, [inter_mg_lower, inter_mg_upper], FWHM_He3_err
 
@@ -564,7 +565,7 @@ def investigate_grids(df, duration):
 
 
 def energy_plot(energy, number_bins, label, start=1, stop=10, useMaxNorm=False,
-                color=None, scaling=1):
+                color=None, scaling=1, linestyle='solid'):
     """
     Histograms the energy transfer values from a measurement
 
@@ -587,13 +588,15 @@ def energy_plot(energy, number_bins, label, start=1, stop=10, useMaxNorm=False,
         hist_temp, _ = np.histogram(energy, bins=number_bins,
                                     range=[A_to_meV(stop), A_to_meV(start)])
         norm = (1/max(hist_temp))*np.ones(len(energy))
+        #print(norm)
     # Plot data
     plt.xlabel('Energy (meV)')
     plt.xscale('log')
     hist, bin_edges, *_ = plt.hist(energy, bins=number_bins,
                                    range=[A_to_meV(stop), A_to_meV(start)],
                                    zorder=5, histtype='step',
-                                   label=label, weights=norm, color=color)
+                                   label=label, weights=norm, color=color,
+                                   linestyle=linestyle)
 
     #heights_MG_non_coated = [8000, 1000]
 
