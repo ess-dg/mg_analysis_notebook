@@ -32,8 +32,7 @@ Finally, select the notebook of interest.
 
 ## How to create a new project
 1. Navigate to 'scripts' and copy the 'template_notebook.ipynb'
-2. Rename the project and commit
-3. Follow the instructions within in the notebook
+2. Rename the project and follow the instructions within in the notebook
 
 ## Basic usage
 1. Execute cell which imports packages
