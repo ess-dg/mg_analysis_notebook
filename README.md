@@ -1,6 +1,6 @@
 # Multi-Grid detector: data analysis framework & jupyter notebooks
 
-Notebook for analysis of Multi-Grid data. Contains a codebase used by notebooks for the following measurements:
+Notebook for analysis of Multi-Grid data. Contains the codebase used by notebooks for the following measurements:
 
 - V20
 - Utgård
