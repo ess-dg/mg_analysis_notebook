@@ -1,4 +1,4 @@
-# Multi-Grid detector: data analysis tools & jupyter notebooks
+# Multi-Grid detector: data analysis framework & jupyter notebooks
 
 Notebook for analysis of Multi-Grid data. Contains a codebase used by notebooks for the following measurements:
 
