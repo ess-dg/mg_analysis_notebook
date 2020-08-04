@@ -6,7 +6,7 @@ Notebook for analysis of Multi-Grid data. Contains a codebase used by notebooks 
 - Utgård
 - LET
 
-The repository also contains a template project 'template_notebook', which contains detailed instructions on how to perform analysis.
+The repository also contains a template project 'template_notebook', which contains detailed instructions on how to create a new project and perform analysis.
 
 ## Requisties
 - Python3 (https://www.python.org/downloads/)
