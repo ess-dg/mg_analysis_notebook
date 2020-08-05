@@ -32,7 +32,7 @@ Finally, select the notebook of interest.
 
 ## How to create a new project
 1. Navigate to 'scripts' and copy the 'template_notebook.ipynb'
-2. Rename the project and put it in the 'scripts' folder
+2. Rename the copied project and put it in the 'scripts' folder
 3. Follow the instructions within in the notebook
 
 ## Basic usage
