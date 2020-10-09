@@ -1,10 +1,12 @@
-# Multi-Grid detector: data analysis tools & jupyter notebooks
+# Multi-Grid detector: data analysis framework & jupyter notebooks
 
-Notebook for analysis of Multi-Grid data. Contains a codebase used by notebooks for the following measurements:
+Notebook for analysis of Multi-Grid data. Contains the codebase used by notebooks for the following measurements:
 
 - V20
 - Utgård
 - LET
+
+The repository also contains a template project at 'scripts/template_notebook.ipynb'. This notebook contains detailed instructions on how to create a new project and perform analysis.
 
 ## Requisties
 - Python3 (https://www.python.org/downloads/)
@@ -30,7 +32,8 @@ Finally, select the notebook of interest.
 
 ## How to create a new project
 1. Navigate to 'scripts' and copy the 'template_notebook.ipynb'
-2. Rename the project and commit
+2. Rename the copied project and put it in the 'scripts' folder
+3. Follow the instructions within in the notebook
 
 ## Basic usage
 1. Execute cell which imports packages
