@@ -48,25 +48,41 @@ def phs_1d_plot(events, number_bins, bus, vmin, vmax):
 def phs_clusters_1d_plot(clusters, clusters_uf, number_bins, bus, duration):
     # Clusters filtered
     plt.hist(clusters.wadc, bins=number_bins, histtype='step',
-             zorder=5, range=[0, 8000], label='Wires (filtered)', color='blue',
+             zorder=5,
+             range=[0, 8000],
+             label='Wires (filtered)', color='blue',
              weights=(1/duration)*np.ones(len(clusters.wadc)))
     plt.hist(clusters.gadc, bins=number_bins, histtype='step',
-             zorder=5, range=[0, 8000], label='Grids (filtered)', color='red',
+             zorder=5,
+             range=[0, 8000],
+             label='Grids (filtered)', color='red',
              weights=(1/duration)*np.ones(len(clusters.gadc)))
     # Clusters unfiltered
-    plt.hist(clusters_uf.wadc, bins=number_bins, histtype='step',
-             zorder=5, range=[0, 8000], label='Wires', color='cyan',
-             weights=(1/duration)*np.ones(len(clusters_uf.wadc)))
-    plt.hist(clusters_uf.gadc, bins=number_bins, histtype='step',
-             zorder=5, range=[0, 8000], label='Grids', color='magenta',
-             weights=(1/duration)*np.ones(len(clusters_uf.gadc)))
+    hist_w, bins_w, __ = plt.hist(clusters_uf.wadc, bins=number_bins, histtype='step',
+                              zorder=5,
+                              range=[0, 8000],
+                              label='Wires', color='cyan',
+                              weights=(1/duration)*np.ones(len(clusters_uf.wadc)))
+    hist_g, bins_g, __ = plt.hist(clusters_uf.gadc, bins=number_bins, histtype='step',
+                                  zorder=5,
+                                  range=[0, 8000],
+                                  label='Grids', color='magenta',
+                                  weights=(1/duration)*np.ones(len(clusters_uf.gadc)))
     plt.title('Bus: %d' % bus)
     plt.xlabel('Charge (ADC channels)')
     plt.ylabel('Counts/s')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     plt.legend()
-
+    # Save histograms
+    bins_w_c = 0.5 * (bins_w[1:] + bins_w[:-1])
+    bins_g_c = 0.5 * (bins_g[1:] + bins_g[:-1])
+    np.savetxt('../output/seq_phs_unfiltered_wires_bus_%d.txt' % bus,
+               np.transpose(np.array([bins_w_c, hist_w])),
+               delimiter=",",header='bins, hist (counts/s)')
+    np.savetxt('../output/seq_phs_unfiltered_grids_bus_%d.txt' % bus,
+               np.transpose(np.array([bins_g_c, hist_g])),
+               delimiter=",",header='bins, hist (counts/s)')
 
 # =============================================================================
 #                                   PHS (2D)
@@ -122,7 +138,8 @@ def clusters_phs_plot(clusters, bus, duration, vmin, vmax):
     bins = [200, 200]
     ADC_range = [[0, 10000], [0, 10000]]
     plt.hist2d(clusters.wadc, clusters.gadc, bins=bins, norm=LogNorm(),
-               range=ADC_range, vmin=vmin, vmax=vmax, cmap='jet',
+               range=ADC_range,
+               vmin=vmin, vmax=vmax, cmap='jet',
                weights=(1/duration)*np.ones(len(clusters.wadc)))
     cbar = plt.colorbar()
     cbar.set_label('Counts/s')
