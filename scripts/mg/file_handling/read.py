@@ -140,21 +140,33 @@ def import_data(file_path, maximum_file_size_in_mb=np.inf):
 
 def extract_clusters(data):
     """ Clusters the imported data and stores it in a DataFrame containing
-        coicident events (i.e. candidate neutron events).
+        coicident events (i.e. clusters).
 
         Does this in the following fashion for coincident events:
             1. Reads one word at a time
             2. Checks what type of word it is (HEADER, DATA_BUS_START,
                DATA_EVENT, DATA_EXTS or EOE).
             3. When a HEADER is encountered, 'is_open' is set to 'True',
-               signifying that a new event has been started. Data is then
-               gathered into a single coincident event until a different bus is
-               encountered, in which case a new event is started.
-            4. When EOE is encountered the event is formed, and timestamp is
-               assigned to it and all the created events under the current
-               HEADER. This event is placed in the created dictionary.
+               signifying that a new cluster has been started. Data is then
+               gathered into a single coincident event until EoE is encountered.
+            4. When EOE is encountered, the cluster is formed with information
+               about bus, channel, charge, time and multiplicity. A flag is set
+               to 1 if more than one bus was encountered. The cluster is placed
+               in the created dictionary.
             5. After the iteration through data is complete, the dictionary
                containing the coincident events is convereted to a DataFrame.
+
+    Explanation of cluster parameters:
+        'bus': Grid column which recorded the cluster
+        'time': At what time the event occured
+        'tof': At what time-of-flight the event occured
+        'wch': Wire channel with most recorded charge
+        'gch': Grid channel with most recorded charge
+        'wadc': Total charge collected by all wires in coincidence
+        'gadc': Total charge collected by all grids in coincidence
+        'wm': Total number of wires in coincidence
+        'gm': Total number of grids in coincidence
+        'flag': Is 1 if more than one was encountered under the same HEADER, else -1
 
     Args:
         data (tuple): Tuple containing data, one word per element.
@@ -164,7 +176,7 @@ def extract_clusters(data):
                               event per row. Each neutron event has
                               information about: "bus", "time",
                               "tof", "wch", "gch", "wadc", "gadc",
-                              "wm", "gm" and "cem".
+                              "wm", "gm" and "flag".
 
     """
     size = len(data)
