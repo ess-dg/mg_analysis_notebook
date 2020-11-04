@@ -20,13 +20,12 @@ import h5py
 def import_data(path):
     # Import data
     nxs = h5py.File(path, 'r')
-    tof_bin_edges = nxs['mantid_workspace_1']['workspace']['axis1'][()]
-    tof_bin_centers = (tof_bin_edges[:-1] + tof_bin_edges[1:]) / 2
-    histograms = nxs['mantid_workspace_1']['workspace']['values'][()].transpose()
+    event_id = nxs['raw_data_1']['instrument']['detector_1']['event_id'][()]
+    tof = nxs['raw_data_1']['instrument']['detector_1']['event_time_offset'][()]
     # Prepare dictionary
-    histogram_dict = {key: value for key, value in zip(tof_bin_centers, histograms)}
+    id_and_tof_dict = {'pixel_id': event_id, 'tof': tof}
     # Initialize DataFrame
-    df = pd.DataFrame(histogram_dict)
+    df = pd.DataFrame(id_and_tof_dict)
     return df
 
 
@@ -37,13 +36,10 @@ def import_data(path):
 def get_pixel_to_xyz_mapping(path):
     # Import data
     nxs = h5py.File(path, 'r')
-    detector_indicies = nxs['mantid_workspace_1']['instrument']['detector']['detector_index'][()]
-    full_coordinates = nxs['mantid_workspace_1']['instrument']['detector']['detector_positions'][()]
-    detector_coordinates = full_coordinates[detector_indicies].transpose()
     # Convert from polar to cartesian coordinates
-    r = detector_coordinates[0]
-    theta = detector_coordinates[1] * ((2*np.pi)/360)
-    phi = detector_coordinates[2] * ((2*np.pi)/360)
+    r = nxs['raw_data_1']['instrument']['detector_1']['distance'][()]
+    theta = nxs['raw_data_1']['instrument']['detector_1']['polar_angle'][()] * ((2*np.pi)/360)
+    phi = nxs['raw_data_1']['instrument']['detector_1']['azimuthal_angle'][()] * ((2*np.pi)/360)
     # Save in dictionary
     position_dict = {'x': r * np.sin(theta) * np.cos(phi),
                      'y': r * np.sin(theta) * np.sin(phi),
