@@ -45,6 +45,6 @@ def get_pixel_to_xyz_mapping(path):
                      'y': r * np.sin(theta) * np.sin(phi),
                      'z': r * np.cos(theta),
                      'r': r,
-                     'theta': theta,
-                     'phi': phi}
+                     'theta': theta * (360/(2*np.pi)),
+                     'phi': phi * (360/(2*np.pi))}
     return position_dict
