@@ -414,16 +414,10 @@ def rate_plot(clusters, number_bins, bus, area):
 
 
 # =============================================================================
-#                                   Timestamp
+#                               TIME-OF-FLIGHT
 # =============================================================================
 
 
-def grid_counts_plot(events, number_bins, bus, area):
-    """
-
-    """
-
-    pass
 
 def tof_histogram(clusters, number_bins, bus):
     """
