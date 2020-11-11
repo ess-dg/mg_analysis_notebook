@@ -13,25 +13,30 @@ import numpy as np
 import pandas as pd
 import h5py
 
-# ==============================================================================
+# =============================================================================
 #                                  IMPORT DATA
-# ==============================================================================
+# =============================================================================
 
 def import_data(path):
     # Import data
     nxs = h5py.File(path, 'r')
-    event_id = nxs['raw_data_1']['instrument']['detector_1']['event_id'][()]
-    tof = nxs['raw_data_1']['instrument']['detector_1']['event_time_offset'][()]
-    # Prepare dictionary
-    id_and_tof_dict = {'pixel_id': event_id, 'tof': tof}
+    # Declare keys in dictionary
+    tof_edges = nxs['raw_data_1']['monitor_1']['time_of_flight'][()]
+    tof_centers = (tof_edges[:-1] + tof_edges[1:]) / 2
+    bm_dict = {key: [] for key in tof_centers}
+    for i in np.arange(1, 9, 1):
+        monitor = 'monitor_%d' % i
+        histogram = nxs['raw_data_1'][monitor]['data'][()][0][0]
+        for tof_center, counts in zip(tof_centers, histogram):
+            bm_dict[tof_center].append(counts)
     # Initialize DataFrame
-    df = pd.DataFrame(id_and_tof_dict)
+    df = pd.DataFrame(bm_dict)
     return df
 
 
-# ==============================================================================
+# =============================================================================
 #                                IMPORT MAPPING
-# ==============================================================================
+# =============================================================================
 
 def get_pixel_to_xyz_mapping(path):
     # Import data
