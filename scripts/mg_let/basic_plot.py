@@ -73,6 +73,9 @@ def phs_clusters_1d_plot(clusters, clusters_uf, number_bins, bus, duration):
     plt.ylabel('Counts/s')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
+    #plt.axvline(600, color='black')
+    #plt.axvline(800, color='black')
+    #plt.axvline(1000, color='black')
     plt.legend()
     # Save histograms
     bins_w_c = 0.5 * (bins_w[1:] + bins_w[:-1])
@@ -366,7 +369,7 @@ def multiplicity_plot_perc(clusters_uf, bus, duration, vmin=None, vmax=None):
         for j in range(len(xbins)-1):
             if hist[j, i] > 0:
                 text = plt.text(xbins[j]+0.5, ybins[i]+0.5,
-                                '%.d%%' % (100*(hist[j, i]/tot)),
+                                '%.0f%%' % (100*(hist[j, i]/tot)),
                                 color="w", ha="center", va="center",
                                 fontweight="bold", fontsize=font_size)
                 text.set_path_effects([path_effects.Stroke(linewidth=1,
@@ -408,8 +411,8 @@ def rate_plot(clusters, number_bins, bus, area):
     hist, bin_edges = np.histogram(time, bins=number_bins)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     delta_t = (60 ** 2) * (bin_centers[1] - bin_centers[0])
-    plt.plot(bin_centers, (hist/delta_t), marker='o', linestyle='--',
-            zorder=5, color='black')
+    plt.errorbar(bin_centers, (hist/delta_t), np.sqrt(hist)/delta_t, marker='.', linestyle='',
+                 zorder=5, color='black')
     return min((hist/delta_t)), max((hist/delta_t))
 
 
@@ -444,7 +447,62 @@ def tof_histogram(clusters, number_bins, bus):
              histtype='step', color='black')
 
 
+# =============================================================================
+#                              UNIFORMITY - GRIDS
+# =============================================================================
 
+def grid_histogram(clusters, bus):
+    """
+    Histograms the counts in each grid.
+
+    Args:
+        clusters (DataFrame): Clustered events
+        bus(int): The bus of the data
+
+    Yields:
+        Figure containing the grid histogram, this can then be used in overlay
+        or in sub plots.
+    """
+
+    # Prepare figure
+    plt.title('Bus: %d' % bus)
+    plt.xlabel('Grid channel')
+    plt.ylabel('Counts')
+    #plt.yscale('log')
+    plt.grid(True, which='major', linestyle='--', zorder=0)
+    plt.grid(True, which='minor', linestyle='--', zorder=0)
+    # Histogram data
+    plt.hist(clusters.gch, bins=40, zorder=4, range=[79.5, 119.5],
+             histtype='step', color='black')
+
+
+# =============================================================================
+#                              UNIFORMITY - WIRES
+# =============================================================================
+
+def wire_histogram(clusters, bus):
+    """
+    Histograms the counts in each wire.
+
+    Args:
+        clusters (DataFrame): Clustered events
+        bus(int): The bus of the data
+
+    Yields:
+        Figure containing the wire histogram, this can then be used in overlay
+        or in sub plots.
+    """
+
+    # Prepare figure
+    plt.title('Bus: %d' % bus)
+    plt.xlabel('Wire channel')
+    plt.ylabel('Counts')
+    #plt.yscale('log')
+    plt.grid(True, which='major', linestyle='--', zorder=0)
+    plt.grid(True, which='minor', linestyle='--', zorder=0)
+    # Histogram data
+    plt.hist(clusters.wch, bins=80, zorder=4, range=[-0.5, 79.5],
+             histtype='step', color='black')
 
 
 

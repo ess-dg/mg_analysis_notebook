@@ -512,7 +512,7 @@ def rate_plot(df, number_bins, label):
     hist, bin_edges = np.histogram(time, bins=number_bins)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     delta_t = (60 ** 2) * (bin_centers[1] - bin_centers[0])
-    plt.plot(bin_centers, hist/delta_t, marker='o', linestyle='--', label=label, zorder=5)
+    plt.errorbar(bin_centers, hist/delta_t, np.sqrt(hist)/delta_t, marker='o', linestyle='', label=label, zorder=5)
 
 
 # =============================================================================

@@ -472,7 +472,7 @@ def filter_data(df, parameters):
 
 
 # =============================================================================
-#                      HELPER FUNCTIONS FOR NOTEBOOKS
+#                                HELPER FUNCTIONS
 # =============================================================================
 
 def extract_data(zipped_path, clusters_save_path, events_save_path):
