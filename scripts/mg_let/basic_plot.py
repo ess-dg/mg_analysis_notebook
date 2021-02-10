@@ -328,7 +328,7 @@ def ce_projections_plot(df, bus_start, bus_stop, title, norm=1):
 #                               Multiplicity
 # =============================================================================
 
-def multiplicity_plot(clusters_uf, bus, duration):
+def multiplicity_plot(clusters_uf, bus, duration, vmin=None, vmax=None):
     """
 
 
@@ -336,9 +336,9 @@ def multiplicity_plot(clusters_uf, bus, duration):
 
     # Plot data
     plt.hist2d(clusters_uf.wm, clusters_uf.gm,
-               bins=[80, 40], range=[[0, 80], [0, 40]],
+               bins=[10, 10], range=[[0, 10], [0, 10]],
                norm=LogNorm(),
-               #vmin=vmin, vmax=vmax,
+               vmin=vmin, vmax=vmax,
                cmap='jet',
                weights=(1/duration)*np.ones(len(clusters_uf.wm)))
     plt.xlabel('Wire Multiplicity')

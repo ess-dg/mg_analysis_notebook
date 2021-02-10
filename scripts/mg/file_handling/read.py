@@ -9,6 +9,7 @@ import struct
 import shutil
 import zipfile
 import re
+import datetime
 import numpy as np
 import pandas as pd
 
@@ -474,6 +475,42 @@ def filter_data(df, parameters):
 # =============================================================================
 #                                HELPER FUNCTIONS
 # =============================================================================
+
+def get_start_time_in_posix(zipped_path):
+    """
+    Function to get measurement start time.
+
+    Args:
+        zipped_path (str): Location of raw data
+
+    Returns:
+        time_in_posix (float): Start time in posix
+
+    """
+    # Extract start time
+    date_and_time = zipped_path[-17:-4]
+    print(date_and_time)
+    year = 2000 + int(date_and_time[0:2])
+    month = int(date_and_time[2:4])
+    day = int(date_and_time[4:6])
+    hour = int(date_and_time[7:9])
+    minute = int(date_and_time[9:11])
+    second = int(date_and_time[11:])
+    print(year)
+    print(month)
+    print(day)
+    print('...')
+    print(hour)
+    print(minute)
+    print(second)
+    print('...')
+    dt = datetime.datetime(year, month, day, hour, minute, second)
+    print(dt)
+    print('...')
+    time_in_posix = datetime.datetime.timestamp(dt)
+    return time_in_posix
+
+
 
 def extract_data(zipped_path, clusters_save_path, events_save_path):
     """
