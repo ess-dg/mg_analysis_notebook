@@ -73,6 +73,7 @@ def phs_clusters_1d_plot(clusters, clusters_uf, number_bins, bus, duration):
     plt.ylabel('Counts/s')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
+    plt.ylim(1e-5, 1)
     #plt.axvline(600, color='black')
     #plt.axvline(800, color='black')
     #plt.axvline(1000, color='black')
@@ -451,7 +452,7 @@ def tof_histogram(clusters, number_bins, bus):
 #                              UNIFORMITY - GRIDS
 # =============================================================================
 
-def grid_histogram(clusters, bus):
+def grid_histogram(clusters, bus, duration):
     """
     Histograms the counts in each grid.
 
@@ -467,20 +468,20 @@ def grid_histogram(clusters, bus):
     # Prepare figure
     plt.title('Bus: %d' % bus)
     plt.xlabel('Grid channel')
-    plt.ylabel('Counts')
+    plt.ylabel('Counts/s')
     #plt.yscale('log')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     # Histogram data
     plt.hist(clusters.gch, bins=40, zorder=4, range=[79.5, 119.5],
+             weights=(1/duration)*np.ones(len(clusters.gch)),
              histtype='step', color='black')
-
 
 # =============================================================================
 #                              UNIFORMITY - WIRES
 # =============================================================================
 
-def wire_histogram(clusters, bus):
+def wire_histogram(clusters, bus, duration):
     """
     Histograms the counts in each wire.
 
@@ -496,13 +497,15 @@ def wire_histogram(clusters, bus):
     # Prepare figure
     plt.title('Bus: %d' % bus)
     plt.xlabel('Wire channel')
-    plt.ylabel('Counts')
+    plt.ylabel('Counts/s')
     #plt.yscale('log')
     plt.grid(True, which='major', linestyle='--', zorder=0)
     plt.grid(True, which='minor', linestyle='--', zorder=0)
     # Histogram data
     plt.hist(clusters.wch, bins=80, zorder=4, range=[-0.5, 79.5],
+             weights=(1/duration)*np.ones(len(clusters.wch)),
              histtype='step', color='black')
+    #plt.ylim(0, 0.006)
 
 
 
